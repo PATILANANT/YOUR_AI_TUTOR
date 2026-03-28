@@ -1,0 +1,10 @@
+streamlit
+google-generativeai
+python-dotenv
+langchain
+langchain-community
+langchain-cohere
+faiss-cpu
+pypdf
+deep-translator
+langgraph

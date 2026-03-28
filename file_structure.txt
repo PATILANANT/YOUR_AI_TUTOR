@@ -1,0 +1,13 @@
+YOUR_AI_TUTOR/
+│
+├── app.py
+├── config.py
+│
+├── utils/
+│   └── translator.py
+│
+├── rag/
+│   └── rag_pipeline.py
+│
+└── data/
+    └── (optional future)
