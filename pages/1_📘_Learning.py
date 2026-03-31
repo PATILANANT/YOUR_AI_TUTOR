@@ -9,7 +9,7 @@ from langchain_classic.chains import RetrievalQA
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 from typing import TypedDict
-from langgraph.graph import StateGraph, END
+
 
 from smart_engine import suggest_next_action
 
@@ -201,6 +201,7 @@ for msg in st.session_state.messages:
 
 # ========= INPUT =========
 if prompt := st.chat_input("Ask your doubt..."):
+    
 
     st.session_state.pop("quiz_data", None)
     st.session_state.pop("user_answers", None)
@@ -408,10 +409,23 @@ if mode == "AI Tutor" and "quiz_data" in st.session_state:
                 }
             )
 
-            data = response.json()
+            if response.status_code == 200:
+                try:
+                    data = response.json()
+                except:
+                    st.error("Invalid response from backend")
+                    st.write(response.text)
+                    st.stop()
+            else:
+                st.error("Backend error")
+                st.write(response.text)
+                st.stop()
 
-            score = data["score"]
-            st.session_state.profile = data["profile"]
+            # SAFE ACCESS
+            score = data.get("score", 0)
+            profile = data.get("profile", st.session_state.profile)
+
+            st.session_state.profile = profile
 
             st.markdown(f"## 🎯 Score: {score}/{len(questions)}")
 

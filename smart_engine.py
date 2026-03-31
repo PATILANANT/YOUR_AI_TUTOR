@@ -1,6 +1,6 @@
 def analyze_performance(profile):
     progress = profile.get("progress", {})
-    weak_topics = profile.get("weak_topics", [])
+    weak_topics = profile.get("weak_topics", {})
 
     if not progress:
         return {

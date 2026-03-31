@@ -81,7 +81,9 @@ def agent_api(data: AgentRequest):
 @app.post("/evaluate")
 def evaluate_api(data: EvaluateRequest):
 
-    score = evaluate_quiz(
+
+
+    score, updated_profile = evaluate_quiz(
         data.questions,
         data.answers,
         data.profile,
@@ -90,8 +92,10 @@ def evaluate_api(data: EvaluateRequest):
 
     return {
         "score": score,
-        "profile": data.profile
+        "profile": updated_profile
     }
+
+
 
 
 # ===============================
