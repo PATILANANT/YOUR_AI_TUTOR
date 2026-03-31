@@ -201,6 +201,7 @@ for msg in st.session_state.messages:
 
 # ========= INPUT =========
 if prompt := st.chat_input("Ask your doubt..."):
+    st.session_state.current_topic = prompt
     
 
     st.session_state.pop("quiz_data", None)
@@ -405,7 +406,7 @@ if mode == "AI Tutor" and "quiz_data" in st.session_state:
                     "questions": questions,
                     "answers": st.session_state.user_answers,
                     "profile": st.session_state.profile,
-                    "topic": prompt
+                    "topic": st.session_state.get("current_topic", "General Topic")
                 }
             )
 

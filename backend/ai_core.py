@@ -135,19 +135,23 @@ def run_agent(topic, profile, target, style):
 # -------------------------------
 
 def evaluate_quiz(questions, answers, profile, topic):
+
     score = 0
 
     for i, q in enumerate(questions):
-        if answers[i] and answers[i][0].lower() == q["answer"]:
+        correct = q["answer"]
+
+        # SAFE CHECK
+        if answers[i] and answers[i][0].lower() == correct:
             score += 1
 
-    # Update progress
+    # UPDATE PROFILE
+    if "progress" not in profile:
+        profile["progress"] = {}
+
     profile["progress"][topic] = score
 
-    # Update weak topics
-    update_weak_topics(profile, topic, score, len(questions))
-
-    return score
+    return score, profile   # 🔥 VERY IMPORTANT
 
 
 # -------------------------------
