@@ -81,46 +81,51 @@ def run_agent(topic, profile, target, style):
     difficulty = get_difficulty(profile, topic)
 
     # PLAN
-    plan = model.generate_content(
-        f"Break topic into steps ({difficulty} level):\n{topic}"
-    ).text
+    try:
+        plan = model.generate_content(f"Break topic into steps ({difficulty} level):\n{topic}").text
+    except:
+        plan = f"Basic plan for {topic}"
 
     # TEACH
-    teaching = model.generate_content(
-        f"""
-Teach this topic for {target} exam.
-Style: {style}
-Difficulty: {difficulty}
+    try:
+        teaching = model.generate_content(
+            f"""
+    Teach this topic for {target} exam.
+    Style: {style}
+    Difficulty: {difficulty}
 
-Topic:
-{topic}
-"""
-    ).text
+    Topic:
+    {topic}
+    """
+        ).text
 
-    # QUIZ
-    quiz = model.generate_content(
-        f"""
-Generate 8 to 12 MCQs as per the topic and target exam.
+        # QUIZ
+        quiz = model.generate_content(
+            f"""
+    Generate 8 to 12 MCQs as per the topic and target exam.
 
-STRICT RULES:
-- Each question MUST be on NEW LINE
-- Use this format ONLY:
+    STRICT RULES:
+    - Each question MUST be on NEW LINE
+    - Use this format ONLY:
 
-Q1|Question|a) option|b) option|c) option|d) option|c
-Q2|Question|a) option|b) option|c) option|d) option|b
-Q3|Question|a) option|b) option|c) option|d) option|a
+    Q1|Question|a) option|b) option|c) option|d) option|c
+    Q2|Question|a) option|b) option|c) option|d) option|b
+    Q3|Question|a) option|b) option|c) option|d) option|a
 
-DO NOT ADD ANY EXTRA TEXT.
-
-
+    DO NOT ADD ANY EXTRA TEXT.
 
 
-Difficulty: {difficulty}
 
-Topic:
-{topic}
-"""
-    ).text
+
+    Difficulty: {difficulty}
+
+    Topic:
+    {topic}
+    """
+        ).text
+    
+    except:
+        plan = f"Basic plan for {topic}"
 
     return format_response(plan, teaching, quiz, topic, difficulty, target)
 

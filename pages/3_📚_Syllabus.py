@@ -6,9 +6,9 @@ init_session()
 
 st.title("📚 Syllabus Manager")
 
-if "user_id" not in st.session_state:
-    st.warning("Please login first 🔐")
-    st.stop()
+# if "user_id" not in st.session_state:
+#     st.warning("Please login first 🔐")
+#     st.stop()
 
 if "profile" not in st.session_state:
     st.session_state.profile = {

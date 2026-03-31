@@ -8,9 +8,9 @@ init_session()
 
 st.title("📊 Student Dashboard")
 
-if "user_id" not in st.session_state:
-    st.warning("Please login first 🔐")
-    st.stop()
+# if "user_id" not in st.session_state:
+#     st.warning("Please login first 🔐")
+#     st.stop()
 
 if "profile" not in st.session_state:
     st.warning("No data yet. Start learning first.")
