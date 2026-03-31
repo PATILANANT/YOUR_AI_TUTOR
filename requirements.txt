@@ -8,3 +8,6 @@ faiss-cpu
 pypdf
 deep-translator
 langgraph
+requests
+fastapi
+uvicorn
