@@ -4,7 +4,13 @@ from smart_engine import analyze_performance
 from utils.session_init import init_session
 init_session()
 
+
+
 st.title("📊 Student Dashboard")
+
+if "user_id" not in st.session_state:
+    st.warning("Please login first 🔐")
+    st.stop()
 
 if "profile" not in st.session_state:
     st.warning("No data yet. Start learning first.")

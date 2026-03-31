@@ -15,170 +15,11 @@ from smart_engine import suggest_next_action
 from utils.session_init import init_session
 init_session()
 
-# # ========= SESSION INIT =========
-# if "messages" not in st.session_state:
-#     st.session_state.messages = []
+if "user_id" not in st.session_state:
+    st.warning("Please login first 🔐")
+    st.stop()
 
-# if "profile" not in st.session_state:
-#     st.session_state.profile = {
-#         "goal": None,
-#         "syllabus": [],
-#         "progress": {},
-#         "weak_topics": []
-#     }
-
-# # ========= AGENT =========
-# class TutorState(TypedDict):
-#     topic: str
-#     plan: str
-#     teaching: str
-#     quiz: str
-#     target: str
-#     style: str
-
-# def planner_agent(state):
-#     return {"plan": model.generate_content(f"Break topic:\n{state['topic']}").text}
-
-# def teacher_agent(state):
-#     return {"teaching": model.generate_content(
-#         f"Teach for {state['target']} exam in {state['style']} style:\n{state['topic']}"
-#     ).text}
-
-# def examiner_agent(state):
-#     return {"quiz": model.generate_content(
-#         f"""Generate 3 MCQs in format:
-# Q1|question|a|b|c|d|correct
-# Topic: {state['topic']}"""
-#     ).text}
-
-# def parse_quiz(text):
-#     questions = []
-#     for line in text.split("\n"):
-#         if "|" in line:
-#             p = line.split("|")
-#             if len(p) >= 7:
-#                 questions.append({
-#                     "question": p[1],
-#                     "options": p[2:6],
-#                     "answer": p[6].strip()[0]
-#                 })
-#     return questions
-
-# @st.cache_resource
-# def build_agent():
-#     g = StateGraph(TutorState)
-#     g.add_node("planner", planner_agent)
-#     g.add_node("teacher", teacher_agent)
-#     g.add_node("examiner", examiner_agent)
-#     g.set_entry_point("planner")
-#     g.add_edge("planner", "teacher")
-#     g.add_edge("teacher", "examiner")
-#     g.add_edge("examiner", END)
-#     return g.compile()
-
-# # ========= SIDEBAR =========
-# with st.sidebar:
-
-#     st.markdown("## 🌈 Your AI Tutor")
-
-#     interest = st.selectbox("❤️ Context",
-#         ["Normal", "Relatable", "Others"])
-
-#     language = st.selectbox("🗣️ Language",
-#         ["English", "Hindi", "Marathi"])
-
-#     style = st.selectbox("🧠 Style",
-#         ["Regular", "Story", "Visual", "Code"])
-
-#     mode = st.selectbox("🤖 Mode",
-#         ["Normal Tutor", "AI Tutor"])
-
-#     target = st.selectbox("🎯 Goal",
-#         ["General", "School", "University", "JEE", "GATE", "UPSC"])
-
-#     st.session_state.profile["goal"] = target
-
-#     # PDF
-#     file = st.file_uploader("Upload PDF", type="pdf")
-#     if file:
-#         vector_db = process_pdf("temp.pdf", COHERE_API_KEY)
-#         st.session_state.vector_db = vector_db
-
-# # ========= TITLE =========
-# st.title("📘 Learning")
-
-# # ========= INPUT =========
-# prompt = st.chat_input("Ask your doubt...")
-
-# if prompt:
-#     st.session_state.messages.append({"role": "user", "content": prompt})
-
-#     # RESET MCQ
-#     st.session_state.pop("quiz_data", None)
-#     st.session_state.pop("answers", None)
-
-#     if mode == "AI Tutor":
-
-#         agent = build_agent()
-#         result = agent.invoke({
-#             "topic": prompt,
-#             "target": target,
-#             "style": style
-#         })
-
-#         st.session_state.plan = result["plan"]
-#         st.session_state.teaching = result["teaching"]
-#         st.session_state.quiz_data = result["quiz"]
-
-#     else:
-#         response = model.generate_content(prompt)
-#         st.session_state.messages.append({
-#             "role": "assistant",
-#             "content": response.text
-#         })
-
-# # ========= CHAT =========
-# for msg in st.session_state.messages:
-#     with st.chat_message(msg["role"]):
-#         st.markdown(msg["content"])
-
-# # ========= LEARNING =========
-# if mode == "AI Tutor" and "plan" in st.session_state:
-#     st.markdown("## 📘 Learning")
-#     st.write(st.session_state.plan)
-#     st.write(st.session_state.teaching)
-
-# # ========= MCQ =========
-# if mode == "AI Tutor" and "quiz_data" in st.session_state:
-
-#     st.markdown("## 🧾 Quiz")
-
-#     questions = parse_quiz(st.session_state.quiz_data)
-
-#     if "answers" not in st.session_state:
-#         st.session_state.answers = [None]*len(questions)
-
-#     for i,q in enumerate(questions):
-#         choice = st.radio(q["question"], q["options"], key=f"q{i}")
-#         st.session_state.answers[i] = choice
-
-#     if st.button("Submit Quiz"):
-#         score=0
-#         for i,q in enumerate(questions):
-#             if st.session_state.answers[i][0]==q["answer"]:
-#                 score+=1
-#                 st.success(f"Q{i+1}: Correct")
-#             else:
-#                 st.error(f"Q{i+1}: Wrong (Correct: {q['answer']})")
-
-#         st.write(f"Score: {score}/{len(questions)}")
-
-#         st.session_state.profile["progress"][prompt]=score
-#         if score < len(questions):
-#             st.session_state.profile["weak_topics"].append(prompt)
-
-
- # ========= SESSION INIT (MOVE TO TOP) =========
+# ========= SESSION INIT (MOVE TO TOP) =========
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
@@ -190,70 +31,70 @@ if "profile" not in st.session_state:
         "weak_topics": []
     }
 
-# ========= TYPED DICT FOR AGENT MODE =========
-class TutorState(TypedDict):
-    topic: str
-    plan: str
-    teaching: str
-    quiz: str
-    evaluation: str
-    target: str
-    style: str
-    user_answer: str   
+# # ========= TYPED DICT FOR AGENT MODE =========
+# class TutorState(TypedDict):
+#     topic: str
+#     plan: str
+#     teaching: str
+#     quiz: str
+#     evaluation: str
+#     target: str
+#     style: str
+#     user_answer: str   
 
-def decide_flow(prompt, target):
-    prompt_lower = prompt.lower()
+# def decide_flow(prompt, target):
+#     prompt_lower = prompt.lower()
 
-    if len(prompt.split()) < 5:
-        return "simple"
+#     if len(prompt.split()) < 5:
+#         return "simple"
 
-    if target in ["JEE", "NEET", "GATE"]:
-        return "exam"
+#     if target in ["JEE", "NEET", "GATE"]:
+#         return "exam"
 
-    if "explain" in prompt_lower or "what is" in prompt_lower:
-        return "concept"
+#     if "explain" in prompt_lower or "what is" in prompt_lower:
+#         return "concept"
 
-    return "full"
-
-
-def planner_agent(state):
-    prompt = f"Break topic into steps:\n{state['topic']}"
-    return {"plan": st.text}
+#     return "full"
 
 
-def teacher_agent(state):
-    prompt = f"""
-Teach this topic for {state['target']} exam.
-Style: {state['style']}
-
-Topic:
-{state['topic']}
-"""
-    return {"teaching": st.text}
-
-def evaluator_agent(state):
-    prompt = f"Suggest improvement:\n{state['topic']}"
-    return {"evaluation": st.text}
-
-def examiner_agent(state):
-    prompt = f"""
-Generate 8 to 12 MCQs as per the topic and target exam.
-
-STRICT RULES:
-- Each question MUST be on NEW LINE
-- Use this format ONLY:
-
-Q1|Question|a) option|b) option|c) option|d) option|c
-Q2|Question|a) option|b) option|c) option|d) option|b
-Q3|Question|a) option|b) option|c) option|d) option|a
-
-DO NOT ADD ANY EXTRA TEXT.
+# def planner_agent(state):
+#     prompt = f"Break topic into steps:\n{state['topic']}"
+#     return {"plan"}
 
 
-Topic:
-{state['topic']}
-"""
-    return {"quiz": st.text}
+# def teacher_agent(state):
+#     prompt = f"""
+# Teach this topic for {state['target']} exam.
+# Style: {state['style']}
+
+# Topic:
+# {state['topic']}
+# """
+#     return {"teaching"}
+
+# def evaluator_agent(state):
+#     prompt = f"Suggest improvement:\n{state['topic']}"
+#     return {"evaluation"}
+
+# def examiner_agent(state):
+#     prompt = f"""
+# Generate 8 to 12 MCQs as per the topic and target exam.
+
+# STRICT RULES:
+# - Each question MUST be on NEW LINE
+# - Use this format ONLY:
+
+# Q1|Question|a) option|b) option|c) option|d) option|c
+# Q2|Question|a) option|b) option|c) option|d) option|b
+# Q3|Question|a) option|b) option|c) option|d) option|a
+
+# DO NOT ADD ANY EXTRA TEXT.
+
+
+# Topic:
+# {state['topic']}
+# """
+#     return {"quiz"}
 
 def parse_quiz(quiz_text):
     questions = []
@@ -273,23 +114,23 @@ def parse_quiz(quiz_text):
 
     return questions
 
-@st.cache_resource
-def build_multi_agent():
-    graph = StateGraph(TutorState)
+# @st.cache_resource
+# def build_multi_agent():
+#     graph = StateGraph(TutorState)
 
-    graph.add_node("planner", planner_agent)
-    graph.add_node("teacher", teacher_agent)
-    graph.add_node("examiner", examiner_agent)
-    graph.add_node("evaluator", evaluator_agent)
+#     graph.add_node("planner", planner_agent)
+#     graph.add_node("teacher", teacher_agent)
+#     graph.add_node("examiner", examiner_agent)
+#     graph.add_node("evaluator", evaluator_agent)
 
-    graph.set_entry_point("planner")
+#     graph.set_entry_point("planner")
 
-    graph.add_edge("planner", "teacher")
-    graph.add_edge("teacher", "examiner")
-    graph.add_edge("examiner", "evaluator")
-    graph.add_edge("evaluator", END)
+#     graph.add_edge("planner", "teacher")
+#     graph.add_edge("teacher", "examiner")
+#     graph.add_edge("examiner", "evaluator")
+#     graph.add_edge("evaluator", END)
 
-    return graph.compile()
+#     return graph.compile()
 
 # ========= LANGUAGES =========
 INDIAN_LANGUAGES = [
@@ -467,7 +308,7 @@ digraph G {{
             # ========= AGENT MODE =========
                 if mode == "AI Tutor":
 
-                    from ai_core import run_agent
+                    
 
                     if "quiz_data" not in st.session_state:
                         response = requests.post(
@@ -595,7 +436,7 @@ if mode == "Learning Agent" and "quiz_data" in st.session_state:
 
             st.session_state.user_answers[i] = choice
 
-        from ai_core import evaluate_quiz, suggest_next
+        
 
         if st.button("Submit Quiz"):
 
@@ -615,6 +456,14 @@ if mode == "Learning Agent" and "quiz_data" in st.session_state:
             st.session_state.profile = data["profile"]
 
             st.markdown(f"## 🎯 Score: {score}/{len(questions)}")
+
+            requests.post(
+                "http://127.0.0.1:8000/save_profile",
+                json={
+                    "user_id": st.session_state.user_id,
+                    "profile": st.session_state.profile
+                }
+            )
 
             # Show feedback
             for i, q in enumerate(questions):

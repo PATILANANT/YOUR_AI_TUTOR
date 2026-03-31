@@ -2,7 +2,13 @@ import streamlit as st
 from utils.session_init import init_session
 init_session()
 
+
+
 st.title("📚 Syllabus Manager")
+
+if "user_id" not in st.session_state:
+    st.warning("Please login first 🔐")
+    st.stop()
 
 if "profile" not in st.session_state:
     st.session_state.profile = {

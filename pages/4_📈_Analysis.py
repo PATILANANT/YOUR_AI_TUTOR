@@ -5,6 +5,10 @@ init_session()
 
 st.title("📈 Performance Analysis")
 
+if "user_id" not in st.session_state:
+    st.warning("Please login first 🔐")
+    st.stop()
+
 if "profile" not in st.session_state:
     st.warning("No data available.")
 else:
