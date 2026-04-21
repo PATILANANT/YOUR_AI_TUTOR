@@ -1,9 +1,9 @@
-streamlit
-google-generativeai
+google-genai
 python-dotenv
 langchain
 langchain-community
 langchain-cohere
+langchain-google-genai
 faiss-cpu
 pypdf
 deep-translator

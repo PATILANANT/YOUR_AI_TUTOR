@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Analysis — Your AI Tutor</title>
+  <meta name="description" content="Visualize your performance with charts and AI-powered insights." />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter','system-ui','sans-serif'] } } } }
+  </script>
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .glass { background: rgba(255,255,255,0.04); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.06); }
+    .gradient-text { background: linear-gradient(135deg, #818cf8, #a78bfa, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  </style>
+</head>
+<body class="bg-zinc-950 text-zinc-100 min-h-screen">
+
+  <!-- Navbar -->
+  <nav class="fixed top-0 left-0 right-0 z-50 glass border-b border-zinc-800/50">
+    <div class="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+      <a href="index.html" class="flex items-center gap-2">
+        <div class="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center text-xs font-bold">AI</div>
+        <span class="text-base font-semibold tracking-tight">Your AI Tutor</span>
+      </a>
+      <div class="hidden md:flex items-center gap-1">
+        <a href="learning.html" class="px-3 py-1.5 text-sm text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800/60 transition-all">Learning</a>
+        <a href="dashboard.html" class="px-3 py-1.5 text-sm text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800/60 transition-all">Dashboard</a>
+        <a href="syllabus.html" class="px-3 py-1.5 text-sm text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800/60 transition-all">Syllabus</a>
+        <a href="analysis.html" class="px-3 py-1.5 text-sm text-indigo-400 bg-indigo-500/10 rounded-lg font-medium">Analysis</a>
+      </div>
+      <div id="nav-auth" class="flex items-center gap-3"></div>
+    </div>
+  </nav>
+
+  <!-- Content -->
+  <main class="max-w-5xl mx-auto px-6 pt-24 pb-16">
+    <h1 class="text-3xl font-bold tracking-tight mb-8">📈 Performance Analysis</h1>
+
+    <!-- Metrics -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+      <div class="glass rounded-2xl p-6 text-center">
+        <p class="text-xs text-zinc-500 uppercase tracking-wider mb-2">Topics Covered</p>
+        <p id="a-topics" class="text-4xl font-bold gradient-text">0</p>
+      </div>
+      <div class="glass rounded-2xl p-6 text-center">
+        <p class="text-xs text-zinc-500 uppercase tracking-wider mb-2">Average Score</p>
+        <p id="a-avg" class="text-4xl font-bold gradient-text">—</p>
+      </div>
+      <div class="glass rounded-2xl p-6 text-center">
+        <p class="text-xs text-zinc-500 uppercase tracking-wider mb-2">Weak Topics</p>
+        <p id="a-weak" class="text-4xl font-bold text-amber-400">0</p>
+      </div>
+    </div>
+
+    <!-- Chart -->
+    <div class="glass rounded-2xl p-6 mb-8">
+      <h2 class="text-lg font-semibold mb-4">Score by Topic</h2>
+      <div id="chart-wrapper" class="relative h-72">
+        <canvas id="score-chart"></canvas>
+        <div id="no-data-chart" class="absolute inset-0 flex items-center justify-center text-zinc-500 text-sm">
+          No performance data yet. Start learning to see your chart.
+        </div>
+      </div>
+    </div>
+
+    <!-- Topic Breakdown -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+      <!-- Strengths -->
+      <div class="glass rounded-2xl p-6">
+        <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Strengths
+        </h2>
+        <div id="a-strengths" class="space-y-2">
+          <p class="text-sm text-zinc-500">Complete some quizzes to see your strengths.</p>
+        </div>
+      </div>
+
+      <!-- Needs Improvement -->
+      <div class="glass rounded-2xl p-6">
+        <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-red-500"></span> Needs Improvement
+        </h2>
+        <div id="a-weaknesses" class="space-y-2">
+          <p class="text-sm text-zinc-500">No weak areas identified yet.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Suggestion -->
+    <div id="a-suggestion-box" class="glass rounded-2xl p-6 mt-8 hidden">
+      <h2 class="text-lg font-semibold mb-3 flex items-center gap-2">🧠 AI Recommendation</h2>
+      <p id="a-suggestion" class="text-sm text-zinc-300"></p>
+    </div>
+  </main>
+
+  <script src="js/app.js"></script>
+  <script>
+    if (!requireAuth()) throw new Error("redirect");
+
+    const profile = getProfile();
+    const progress = profile.progress || {};
+    const weakTopics = profile.weak_topics || {};
+    const analysis = analyzePerformance(profile);
+
+    const topics = Object.keys(progress);
+    const scores = Object.values(progress);
+
+    // Metrics
+    document.getElementById('a-topics').textContent = topics.length;
+    document.getElementById('a-weak').textContent = Object.keys(weakTopics).length;
+
+    if (topics.length > 0) {
+      const avg = (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1);
+      document.getElementById('a-avg').textContent = avg;
+    }
+
+    // Chart
+    if (topics.length > 0) {
+      document.getElementById('no-data-chart').classList.add('hidden');
+
+      const ctx = document.getElementById('score-chart').getContext('2d');
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: topics.map(t => t.length > 20 ? t.slice(0, 18) + '…' : t),
+          datasets: [{
+            label: 'Score',
+            data: scores,
+            backgroundColor: scores.map(s => {
+              if (s >= 8) return 'rgba(52, 211, 153, 0.6)';
+              if (s >= 4) return 'rgba(251, 191, 36, 0.6)';
+              return 'rgba(248, 113, 113, 0.6)';
+            }),
+            borderColor: scores.map(s => {
+              if (s >= 8) return '#34d399';
+              if (s >= 4) return '#fbbf24';
+              return '#f87171';
+            }),
+            borderWidth: 1,
+            borderRadius: 6,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: { color: 'rgba(255,255,255,0.04)' },
+              ticks: { color: '#a1a1aa', font: { family: 'Inter' } }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { color: '#a1a1aa', font: { family: 'Inter', size: 11 } }
+            }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#18181b',
+              borderColor: 'rgba(255,255,255,0.1)',
+              borderWidth: 1,
+              titleFont: { family: 'Inter' },
+              bodyFont: { family: 'Inter' }
+            }
+          }
+        }
+      });
+    }
+
+    // Strengths and Weaknesses
+    if (topics.length > 0) {
+      const sorted = topics.map((t, i) => ({ topic: t, score: scores[i] }));
+      const strong = sorted.filter(x => x.score >= 6).sort((a, b) => b.score - a.score);
+      const weak = sorted.filter(x => x.score < 6).sort((a, b) => a.score - b.score);
+
+      if (strong.length > 0) {
+        document.getElementById('a-strengths').innerHTML = strong.map(x => `
+          <div class="flex items-center justify-between px-3 py-2 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
+            <span class="text-sm text-zinc-200">${x.topic}</span>
+            <span class="text-xs font-medium text-emerald-400">${x.score} pts</span>
+          </div>
+        `).join('');
+      }
+
+      if (weak.length > 0) {
+        document.getElementById('a-weaknesses').innerHTML = weak.map(x => `
+          <div class="flex items-center justify-between px-3 py-2 rounded-lg bg-red-500/5 border border-red-500/10">
+            <span class="text-sm text-zinc-200">${x.topic}</span>
+            <span class="text-xs font-medium text-red-400">${x.score} pts</span>
+          </div>
+        `).join('');
+      }
+    }
+
+    // AI Suggestion
+    (async () => {
+      if (topics.length > 0) {
+        try {
+          const res = await apiCall('/suggest', 'POST', { profile });
+          document.getElementById('a-suggestion').textContent = res.suggestion;
+          document.getElementById('a-suggestion-box').classList.remove('hidden');
+        } catch (e) { /* skip */ }
+      }
+    })();
+  </script>
+</body>
+</html>

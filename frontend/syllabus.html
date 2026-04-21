@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Syllabus — Your AI Tutor</title>
+  <meta name="description" content="Manage your syllabus and organize learning topics." />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter','system-ui','sans-serif'] } } } }
+  </script>
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .glass { background: rgba(255,255,255,0.04); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.06); }
+    .topic-chip { transition: all 0.2s; }
+    .topic-chip:hover .remove-btn { opacity: 1; }
+  </style>
+</head>
+<body class="bg-zinc-950 text-zinc-100 min-h-screen">
+
+  <!-- Navbar -->
+  <nav class="fixed top-0 left-0 right-0 z-50 glass border-b border-zinc-800/50">
+    <div class="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+      <a href="index.html" class="flex items-center gap-2">
+        <div class="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center text-xs font-bold">AI</div>
+        <span class="text-base font-semibold tracking-tight">Your AI Tutor</span>
+      </a>
+      <div class="hidden md:flex items-center gap-1">
+        <a href="learning.html" class="px-3 py-1.5 text-sm text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800/60 transition-all">Learning</a>
+        <a href="dashboard.html" class="px-3 py-1.5 text-sm text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800/60 transition-all">Dashboard</a>
+        <a href="syllabus.html" class="px-3 py-1.5 text-sm text-indigo-400 bg-indigo-500/10 rounded-lg font-medium">Syllabus</a>
+        <a href="analysis.html" class="px-3 py-1.5 text-sm text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800/60 transition-all">Analysis</a>
+      </div>
+      <div id="nav-auth" class="flex items-center gap-3"></div>
+    </div>
+  </nav>
+
+  <!-- Content -->
+  <main class="max-w-3xl mx-auto px-6 pt-24 pb-16">
+    <h1 class="text-3xl font-bold tracking-tight mb-2">📚 Syllabus Manager</h1>
+    <p class="text-zinc-400 text-sm mb-8">Add your topics and the AI will guide you through each one in order.</p>
+
+    <!-- Add Topics -->
+    <div class="glass rounded-2xl p-6 mb-6">
+      <h2 class="text-sm font-semibold text-zinc-300 mb-3">Add Topics</h2>
+      <textarea id="topics-input" rows="3"
+        class="w-full px-4 py-3 bg-zinc-900/80 border border-zinc-700/50 rounded-xl text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 resize-none"
+        placeholder="Enter topics separated by commas, e.g. Photosynthesis, Cell Division, Genetics"></textarea>
+      <div class="flex gap-3 mt-4">
+        <button onclick="saveSyllabus()" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-indigo-600/20">
+          Save Syllabus
+        </button>
+        <button onclick="clearSyllabus()" class="px-5 py-2.5 border border-zinc-700/50 hover:border-red-500/30 text-zinc-400 hover:text-red-400 rounded-xl text-sm transition-all">
+          Clear All
+        </button>
+      </div>
+    </div>
+
+    <!-- Current Syllabus -->
+    <div class="glass rounded-2xl p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-sm font-semibold text-zinc-300">Current Syllabus</h2>
+        <span id="topic-count" class="text-xs text-zinc-500 px-2.5 py-1 rounded-full bg-zinc-800">0 topics</span>
+      </div>
+      <div id="syllabus-display" class="min-h-[60px]">
+        <p class="text-sm text-zinc-500">No topics added yet.</p>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/app.js"></script>
+  <script>
+    if (!requireAuth()) throw new Error("redirect");
+
+    function renderSyllabus() {
+      const profile = getProfile();
+      const syllabus = profile.syllabus || [];
+      const progress = profile.progress || {};
+      const display = document.getElementById('syllabus-display');
+      const count = document.getElementById('topic-count');
+
+      const validTopics = syllabus.filter(t => t && t.trim());
+      count.textContent = `${validTopics.length} topic${validTopics.length !== 1 ? 's' : ''}`;
+
+      if (validTopics.length === 0) {
+        display.innerHTML = '<p class="text-sm text-zinc-500">No topics added yet.</p>';
+        return;
+      }
+
+      display.innerHTML = `<div class="space-y-2">${validTopics.map((topic, i) => {
+        const done = progress[topic] !== undefined;
+        return `
+          <div class="topic-chip flex items-center justify-between px-4 py-3 rounded-xl border ${
+            done ? 'border-emerald-500/20 bg-emerald-500/5' : 'border-zinc-700/40 bg-zinc-800/30'
+          }">
+            <div class="flex items-center gap-3">
+              <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
+                done ? 'bg-emerald-500/20 text-emerald-400' : 'bg-zinc-700/50 text-zinc-400'
+              }">${done ? '✓' : i + 1}</span>
+              <span class="text-sm ${done ? 'text-emerald-300' : 'text-zinc-200'}">${topic}</span>
+            </div>
+            <button onclick="removeTopic(${i})" class="remove-btn opacity-0 text-zinc-600 hover:text-red-400 transition-all p-1" title="Remove">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+        `;
+      }).join('')}</div>`;
+    }
+
+    async function saveSyllabus() {
+      const input = document.getElementById('topics-input');
+      const raw = input.value.trim();
+      if (!raw) {
+        showToast('Enter topics first', 'warning');
+        return;
+      }
+
+      const topics = raw.split(',').map(t => t.trim()).filter(t => t);
+      const profile = getProfile();
+
+      // Merge with existing
+      const existing = profile.syllabus || [];
+      const merged = [...new Set([...existing, ...topics])];
+      profile.syllabus = merged;
+      setProfile(profile);
+
+      // Save to backend
+      const user = getUser();
+      try {
+        await apiCall('/save_profile', 'POST', { user_id: user.user_id, profile });
+        showToast('Syllabus saved ✅', 'success');
+      } catch (e) {
+        showToast('Saved locally (backend error)', 'warning');
+      }
+
+      input.value = '';
+      renderSyllabus();
+    }
+
+    async function clearSyllabus() {
+      const profile = getProfile();
+      profile.syllabus = [];
+      setProfile(profile);
+
+      const user = getUser();
+      try {
+        await apiCall('/save_profile', 'POST', { user_id: user.user_id, profile });
+      } catch (e) { /* ignore */ }
+
+      renderSyllabus();
+      showToast('Syllabus cleared', 'info');
+    }
+
+    async function removeTopic(index) {
+      const profile = getProfile();
+      profile.syllabus.splice(index, 1);
+      setProfile(profile);
+
+      const user = getUser();
+      try {
+        await apiCall('/save_profile', 'POST', { user_id: user.user_id, profile });
+      } catch (e) { /* ignore */ }
+
+      renderSyllabus();
+    }
+
+    renderSyllabus();
+  </script>
+</body>
+</html>

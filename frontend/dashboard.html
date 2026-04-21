@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — Your AI Tutor</title>
+  <meta name="description" content="Track your learning goals, progress, and insights." />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter','system-ui','sans-serif'] } } } }
+  </script>
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .glass { background: rgba(255,255,255,0.04); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.06); }
+    .gradient-text { background: linear-gradient(135deg, #818cf8, #a78bfa, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  </style>
+</head>
+<body class="bg-zinc-950 text-zinc-100 min-h-screen">
+
+  <!-- Navbar -->
+  <nav class="fixed top-0 left-0 right-0 z-50 glass border-b border-zinc-800/50">
+    <div class="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+      <a href="index.html" class="flex items-center gap-2">
+        <div class="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center text-xs font-bold">AI</div>
+        <span class="text-base font-semibold tracking-tight">Your AI Tutor</span>
+      </a>
+      <div class="hidden md:flex items-center gap-1">
+        <a href="learning.html" class="px-3 py-1.5 text-sm text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800/60 transition-all">Learning</a>
+        <a href="dashboard.html" class="px-3 py-1.5 text-sm text-indigo-400 bg-indigo-500/10 rounded-lg font-medium">Dashboard</a>
+        <a href="syllabus.html" class="px-3 py-1.5 text-sm text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800/60 transition-all">Syllabus</a>
+        <a href="analysis.html" class="px-3 py-1.5 text-sm text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800/60 transition-all">Analysis</a>
+      </div>
+      <div id="nav-auth" class="flex items-center gap-3"></div>
+    </div>
+  </nav>
+
+  <!-- Content -->
+  <main class="max-w-5xl mx-auto px-6 pt-24 pb-16">
+    <h1 class="text-3xl font-bold tracking-tight mb-8">📊 Student Dashboard</h1>
+
+    <!-- Metric Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+      <div class="glass rounded-2xl p-5">
+        <p class="text-xs text-zinc-500 uppercase tracking-wider mb-1">Goal</p>
+        <p id="d-goal" class="text-lg font-semibold text-indigo-400">—</p>
+      </div>
+      <div class="glass rounded-2xl p-5">
+        <p class="text-xs text-zinc-500 uppercase tracking-wider mb-1">Topics Covered</p>
+        <p id="d-topics" class="text-lg font-semibold">0</p>
+      </div>
+      <div class="glass rounded-2xl p-5">
+        <p class="text-xs text-zinc-500 uppercase tracking-wider mb-1">Avg Score</p>
+        <p id="d-avg" class="text-lg font-semibold">—</p>
+      </div>
+      <div class="glass rounded-2xl p-5">
+        <p class="text-xs text-zinc-500 uppercase tracking-wider mb-1">Weak Topics</p>
+        <p id="d-weak" class="text-lg font-semibold text-amber-400">0</p>
+      </div>
+    </div>
+
+    <!-- Syllabus Overview -->
+    <section class="glass rounded-2xl p-6 mb-6">
+      <h2 class="text-lg font-semibold mb-4">📚 Syllabus</h2>
+      <div id="d-syllabus" class="flex flex-wrap gap-2">
+        <p class="text-sm text-zinc-500">No syllabus set yet.</p>
+      </div>
+    </section>
+
+    <!-- Progress Breakdown -->
+    <section class="glass rounded-2xl p-6 mb-6">
+      <h2 class="text-lg font-semibold mb-4">📈 Progress</h2>
+      <div id="d-progress" class="space-y-3">
+        <p class="text-sm text-zinc-500">No progress data yet.</p>
+      </div>
+    </section>
+
+    <!-- Weak Topics -->
+    <section class="glass rounded-2xl p-6 mb-6">
+      <h2 class="text-lg font-semibold mb-4">⚠️ Weak Topics</h2>
+      <div id="d-weak-list" class="flex flex-wrap gap-2">
+        <p class="text-sm text-zinc-500">No weak topics identified.</p>
+      </div>
+    </section>
+
+    <!-- Insights -->
+    <section class="glass rounded-2xl p-6">
+      <h2 class="text-lg font-semibold mb-4">🧠 Insights</h2>
+      <div id="d-insights" class="text-sm text-zinc-400">
+        <p>Start learning to see your insights here.</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/app.js"></script>
+  <script>
+    if (!requireAuth()) throw new Error("redirect");
+
+    const profile = getProfile();
+    const analysis = analyzePerformance(profile);
+
+    // Goal
+    document.getElementById('d-goal').textContent = profile.goal || 'Not set';
+
+    // Topics Covered
+    const progress = profile.progress || {};
+    const progressKeys = Object.keys(progress);
+    document.getElementById('d-topics').textContent = progressKeys.length;
+
+    // Avg Score
+    if (progressKeys.length > 0) {
+      const vals = Object.values(progress);
+      const avg = (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(2);
+      document.getElementById('d-avg').textContent = avg;
+    }
+
+    // Weak topics count
+    const weakTopics = Object.keys(profile.weak_topics || {});
+    document.getElementById('d-weak').textContent = weakTopics.length;
+
+    // Syllabus
+    const syllabusEl = document.getElementById('d-syllabus');
+    const syllabus = profile.syllabus || [];
+    if (syllabus.length > 0 && syllabus[0]) {
+      syllabusEl.innerHTML = syllabus.map(t =>
+        `<span class="px-3 py-1.5 rounded-lg text-xs font-medium ${
+          progress[t] !== undefined
+            ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
+            : 'bg-zinc-800 text-zinc-400 border border-zinc-700/40'
+        }">${t}${progress[t] !== undefined ? ' ✓' : ''}</span>`
+      ).join('');
+    }
+
+    // Progress bars
+    const progressEl = document.getElementById('d-progress');
+    if (progressKeys.length > 0) {
+      progressEl.innerHTML = progressKeys.map(topic => {
+        const score = progress[topic];
+        const maxScore = 12; // approx max quiz questions
+        const pct = Math.min(Math.round((score / maxScore) * 100), 100);
+        const color = pct >= 70 ? 'bg-emerald-500' : pct >= 40 ? 'bg-amber-500' : 'bg-red-500';
+        return `
+          <div>
+            <div class="flex justify-between text-sm mb-1">
+              <span class="text-zinc-300">${topic}</span>
+              <span class="text-zinc-500">${score} pts</span>
+            </div>
+            <div class="h-2 bg-zinc-800 rounded-full overflow-hidden">
+              <div class="h-full ${color} rounded-full transition-all duration-500" style="width:${pct}%"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Weak topics
+    const weakEl = document.getElementById('d-weak-list');
+    if (weakTopics.length > 0) {
+      weakEl.innerHTML = weakTopics.map(t =>
+        `<span class="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500/15 text-red-400 border border-red-500/20">${t}</span>`
+      ).join('');
+    }
+
+    // Insights
+    const insightsEl = document.getElementById('d-insights');
+    if (analysis.avg_score !== undefined) {
+      insightsEl.innerHTML = `
+        <div class="space-y-2">
+          <p>📊 <strong class="text-zinc-200">Average Score:</strong> ${analysis.avg_score.toFixed(2)}</p>
+          <p>📘 <strong class="text-zinc-200">Topics Covered:</strong> ${analysis.total_topics}</p>
+          <p>⚠️ <strong class="text-zinc-200">Weak Topics:</strong> ${analysis.weak_topics.length > 0 ? analysis.weak_topics.join(', ') : 'None'}</p>
+        </div>
+      `;
+    }
+  </script>
+</body>
+</html>

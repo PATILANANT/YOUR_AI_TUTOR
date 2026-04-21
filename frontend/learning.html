@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Learning — Your AI Tutor</title>
+  <meta name="description" content="Chat with your AI tutor, learn adaptively, and test yourself with quizzes." />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script>
+    tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter','system-ui','sans-serif'] } } } }
+  </script>
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .glass { background: rgba(255,255,255,0.04); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.06); }
+    .gradient-text { background: linear-gradient(135deg, #818cf8, #a78bfa, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .msg-content h1,.msg-content h2,.msg-content h3 { font-weight:700; margin:0.8em 0 0.4em; }
+    .msg-content h1 { font-size:1.25rem; } .msg-content h2 { font-size:1.1rem; } .msg-content h3 { font-size:1rem; }
+    .msg-content p { margin:0.4em 0; line-height:1.7; }
+    .msg-content ul,.msg-content ol { padding-left:1.5em; margin:0.4em 0; }
+    .msg-content li { margin:0.2em 0; }
+    .msg-content code { background:rgba(255,255,255,0.08); padding:0.15em 0.4em; border-radius:4px; font-size:0.875em; }
+    .msg-content pre { background:rgba(0,0,0,0.4); padding:1em; border-radius:8px; overflow-x:auto; margin:0.6em 0; }
+    .msg-content pre code { background:transparent; padding:0; }
+    .msg-content strong { color:#c4b5fd; }
+    #chat-messages::-webkit-scrollbar { width:6px; }
+    #chat-messages::-webkit-scrollbar-track { background:transparent; }
+    #chat-messages::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.1); border-radius:3px; }
+    .quiz-option { transition: all 0.2s; }
+    .quiz-option:hover { border-color: rgba(129,140,248,0.5); background: rgba(129,140,248,0.08); }
+    .quiz-option.selected { border-color: #818cf8; background: rgba(129,140,248,0.12); }
+    .quiz-option.correct { border-color: #34d399 !important; background: rgba(52,211,153,0.12) !important; }
+    .quiz-option.wrong { border-color: #f87171 !important; background: rgba(248,113,113,0.12) !important; }
+  </style>
+</head>
+<body class="bg-zinc-950 text-zinc-100 min-h-screen flex flex-col">
+
+  <!-- Navbar -->
+  <nav class="fixed top-0 left-0 right-0 z-50 glass border-b border-zinc-800/50">
+    <div class="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
+      <a href="index.html" class="flex items-center gap-2">
+        <div class="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center text-xs font-bold">AI</div>
+        <span class="text-base font-semibold tracking-tight hidden sm:inline">Your AI Tutor</span>
+      </a>
+
+      <div class="hidden md:flex items-center gap-1">
+        <a href="learning.html" class="px-3 py-1.5 text-sm text-indigo-400 bg-indigo-500/10 rounded-lg font-medium">Learning</a>
+        <a href="dashboard.html" class="px-3 py-1.5 text-sm text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800/60 transition-all">Dashboard</a>
+        <a href="syllabus.html" class="px-3 py-1.5 text-sm text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800/60 transition-all">Syllabus</a>
+        <a href="analysis.html" class="px-3 py-1.5 text-sm text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800/60 transition-all">Analysis</a>
+      </div>
+
+      <div id="nav-auth" class="flex items-center gap-3"></div>
+    </div>
+  </nav>
+
+  <!-- Main Layout -->
+  <div class="flex flex-1 pt-14">
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="w-72 border-r border-zinc-800/50 bg-zinc-900/40 flex-shrink-0 overflow-y-auto hidden lg:flex flex-col">
+      <div class="p-5 space-y-5 flex-1">
+
+        <div>
+          <h3 class="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">Mode</h3>
+          <select id="sel-mode" class="w-full px-3 py-2 bg-zinc-800/80 border border-zinc-700/50 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500/50">
+            <option value="normal">Normal Tutor</option>
+            <option value="ai" selected>AI Tutor</option>
+          </select>
+        </div>
+
+        <div>
+          <h3 class="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">Learning Context</h3>
+          <select id="sel-context" class="w-full px-3 py-2 bg-zinc-800/80 border border-zinc-700/50 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500/50">
+            <option>Normal (Direct Explanation)</option>
+            <option>Relatable (Real-life Examples)</option>
+            <option>Others (Use Analogy)</option>
+          </select>
+        </div>
+
+        <div>
+          <h3 class="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">Language</h3>
+          <select id="sel-language" class="w-full px-3 py-2 bg-zinc-800/80 border border-zinc-700/50 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500/50">
+            <option>English</option><option>Hindi</option><option>Marathi</option><option>Gujarati</option>
+            <option>Punjabi</option><option>Bengali</option><option>Tamil</option><option>Telugu</option>
+            <option>Kannada</option><option>Malayalam</option><option>Odia</option><option>Assamese</option>
+            <option>Urdu</option><option>Nepali</option>
+          </select>
+        </div>
+
+        <div>
+          <h3 class="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">Learning Style</h3>
+          <select id="sel-style" class="w-full px-3 py-2 bg-zinc-800/80 border border-zinc-700/50 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500/50">
+            <option>Regular Way</option>
+            <option>Stories & Analogies</option>
+            <option>Visual Flowcharts</option>
+            <option>Code Examples</option>
+          </select>
+        </div>
+
+        <div>
+          <h3 class="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">Target Exam</h3>
+          <select id="sel-target" class="w-full px-3 py-2 bg-zinc-800/80 border border-zinc-700/50 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500/50">
+            <option>General Learning</option><option>School Exam</option><option>University Exam</option>
+            <option>JEE</option><option>NEET</option><option>GATE</option><option>UPSC</option>
+            <option>CAT</option><option>SSC</option><option>Banking Exams</option>
+          </select>
+        </div>
+
+        <hr class="border-zinc-800/50" />
+
+        <!-- PDF Upload -->
+        <div>
+          <h3 class="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">Upload PDF</h3>
+          <label class="flex items-center justify-center gap-2 px-3 py-2.5 border border-dashed border-zinc-600/50 rounded-lg text-sm text-zinc-400 hover:border-indigo-500/40 hover:text-indigo-300 cursor-pointer transition-all">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5m0 0l5 5m-5-5v12"/></svg>
+            <span id="pdf-label">Choose PDF file</span>
+            <input type="file" id="pdf-upload" accept=".pdf" class="hidden" />
+          </label>
+          <div id="pdf-status" class="text-xs text-zinc-500 mt-1.5 hidden"></div>
+        </div>
+
+        <hr class="border-zinc-800/50" />
+
+        <button onclick="resetChat()" class="w-full px-3 py-2.5 text-sm text-zinc-400 hover:text-red-400 border border-zinc-700/50 hover:border-red-500/30 rounded-lg transition-all">
+          Clear Chat
+        </button>
+      </div>
+    </aside>
+
+    <!-- Mobile sidebar toggle -->
+    <button id="sidebar-toggle" class="lg:hidden fixed bottom-20 left-4 z-40 w-10 h-10 rounded-full bg-indigo-600 shadow-lg flex items-center justify-center" onclick="toggleSidebar()">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+    </button>
+
+    <!-- Chat Area -->
+    <main class="flex-1 flex flex-col min-w-0">
+
+      <!-- Messages -->
+      <div id="chat-messages" class="flex-1 overflow-y-auto px-4 md:px-8 py-6 space-y-5">
+        <!-- Welcome state -->
+        <div id="welcome-state" class="flex flex-col items-center justify-center h-full text-center">
+          <div class="w-16 h-16 rounded-2xl bg-indigo-600/15 flex items-center justify-center text-3xl mb-5">🎓</div>
+          <h2 class="text-2xl font-bold mb-2">Ready to Learn?</h2>
+          <p class="text-zinc-400 max-w-md text-sm leading-relaxed">Ask any topic below and your AI tutor will teach you with a personalized plan, explanation, and quiz.</p>
+        </div>
+      </div>
+
+      <!-- Quiz Section (hidden initially) -->
+      <div id="quiz-section" class="hidden border-t border-zinc-800/50 bg-zinc-900/60 max-h-[50vh] overflow-y-auto">
+        <div class="max-w-3xl mx-auto px-4 md:px-8 py-6">
+          <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+            <span class="text-xl">📝</span> Quiz
+          </h2>
+          <div id="quiz-container"></div>
+          <button id="quiz-submit-btn" onclick="submitQuiz()" class="mt-5 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-indigo-600/20">
+            Submit Quiz
+          </button>
+          <div id="quiz-result" class="mt-4 hidden"></div>
+        </div>
+      </div>
+
+      <!-- Input Bar -->
+      <div class="border-t border-zinc-800/50 bg-zinc-900/60 px-4 md:px-8 py-4">
+        <div class="max-w-3xl mx-auto flex gap-3">
+          <input id="chat-input" type="text" placeholder="Ask your doubt..."
+            class="flex-1 px-4 py-3 bg-zinc-800/80 border border-zinc-700/50 rounded-xl text-sm placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/40 transition-all"
+            onkeydown="if(event.key==='Enter')sendMessage()" />
+          <button onclick="sendMessage()" id="send-btn"
+            class="px-5 py-3 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-indigo-600/20 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+            <span>Send</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+          </button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script>
+    // Auth check
+    if (!requireAuth()) throw new Error("redirect");
+
+    // --- State ---
+    let currentTopic = "";
+    let quizQuestions = [];
+    let quizAnswers = [];
+    let pdfUploaded = false;
+
+    // --- Load saved messages ---
+    function loadChat() {
+      const msgs = getMessages();
+      const container = document.getElementById('chat-messages');
+      const welcome = document.getElementById('welcome-state');
+
+      if (msgs.length === 0) {
+        welcome.classList.remove('hidden');
+        welcome.classList.add('flex');
+        return;
+      }
+
+      welcome.classList.add('hidden');
+      welcome.classList.remove('flex');
+
+      msgs.forEach(m => appendBubble(m.role, m.content, false));
+      scrollChat();
+    }
+
+    function appendBubble(role, content, save = true) {
+      const container = document.getElementById('chat-messages');
+      const welcome = document.getElementById('welcome-state');
+      welcome.classList.add('hidden');
+      welcome.classList.remove('flex');
+
+      const wrapper = document.createElement('div');
+      wrapper.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'}`;
+
+      const bubble = document.createElement('div');
+      const maxW = role === 'user' ? 'max-w-md' : 'max-w-2xl';
+      const colors = role === 'user'
+        ? 'bg-indigo-600/20 border-indigo-500/20'
+        : 'bg-zinc-800/60 border-zinc-700/30';
+
+      bubble.className = `${maxW} px-4 py-3 rounded-2xl border ${colors} text-sm leading-relaxed`;
+
+      if (role === 'assistant') {
+        bubble.innerHTML = `<div class="msg-content">${renderMarkdown(content)}</div>`;
+      } else {
+        bubble.textContent = content;
+      }
+
+      wrapper.appendChild(bubble);
+      container.appendChild(wrapper);
+
+      if (save) {
+        const msgs = getMessages();
+        msgs.push({ role, content });
+        setMessages(msgs);
+      }
+
+      scrollChat();
+    }
+
+    function appendLoading() {
+      const container = document.getElementById('chat-messages');
+      const el = document.createElement('div');
+      el.id = 'loading-bubble';
+      el.className = 'flex justify-start';
+      el.innerHTML = `
+        <div class="max-w-2xl px-4 py-3 rounded-2xl border bg-zinc-800/60 border-zinc-700/30 text-sm text-zinc-400 flex items-center gap-2">
+          <svg class="animate-spin h-4 w-4 text-indigo-400" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+          Thinking...
+        </div>`;
+      container.appendChild(el);
+      scrollChat();
+    }
+
+    function removeLoading() {
+      const el = document.getElementById('loading-bubble');
+      if (el) el.remove();
+    }
+
+    function scrollChat() {
+      const el = document.getElementById('chat-messages');
+      el.scrollTop = el.scrollHeight;
+    }
+
+    // --- Send Message ---
+    async function sendMessage() {
+      const input = document.getElementById('chat-input');
+      const prompt = input.value.trim();
+      if (!prompt) return;
+
+      input.value = '';
+      currentTopic = prompt;
+
+      // Hide quiz
+      document.getElementById('quiz-section').classList.add('hidden');
+      quizQuestions = [];
+      quizAnswers = [];
+
+      appendBubble('user', prompt);
+      appendLoading();
+
+      const profile = getProfile();
+      const mode = document.getElementById('sel-mode').value;
+      const target = document.getElementById('sel-target').value;
+      const style = document.getElementById('sel-style').value;
+      const language = document.getElementById('sel-language').value;
+
+      // Save target as goal
+      profile.goal = target;
+      setProfile(profile);
+
+      const sendBtn = document.getElementById('send-btn');
+      sendBtn.disabled = true;
+
+      try {
+        // Check if PDF mode (normal + pdf uploaded)
+        if (mode === 'normal' && pdfUploaded) {
+          const user = getUser();
+          const res = await apiCall('/rag_query', 'POST', {
+            user_id: String(user.user_id),
+            query: prompt
+          });
+
+          let answer = res.answer || "No answer found.";
+
+          // Translate if needed
+          if (language !== 'English') {
+            try {
+              const tr = await apiCall('/translate', 'POST', { text: answer, language });
+              answer = tr.translated;
+            } catch (e) { /* keep original */ }
+          }
+
+          removeLoading();
+          appendBubble('assistant', answer);
+
+        } else {
+          // Agent call
+          const res = await apiCall('/agent', 'POST', {
+            topic: prompt,
+            target,
+            style,
+            profile
+          });
+
+          let plan = res.plan || '';
+          let teaching = res.teaching || '';
+          let quizRaw = res.quiz || '';
+
+          let answer = `## 📌 Learning Plan\n\n${plan}\n\n## 📖 Explanation\n\n${teaching}`;
+
+          // Translate if needed
+          if (language !== 'English') {
+            try {
+              const tr = await apiCall('/translate', 'POST', { text: answer, language });
+              answer = tr.translated;
+            } catch (e) { /* keep original */ }
+          }
+
+          removeLoading();
+          appendBubble('assistant', answer);
+
+          // Parse quiz if AI Tutor mode
+          if (mode === 'ai' && quizRaw) {
+            quizQuestions = parseQuiz(quizRaw);
+            if (quizQuestions.length > 0) {
+              quizAnswers = new Array(quizQuestions.length).fill(null);
+              renderQuiz();
+            }
+          }
+        }
+      } catch (err) {
+        removeLoading();
+        appendBubble('assistant', `❌ Error: ${err.message}`);
+      } finally {
+        sendBtn.disabled = false;
+      }
+    }
+
+    // --- Quiz ---
+    function renderQuiz() {
+      const section = document.getElementById('quiz-section');
+      const container = document.getElementById('quiz-container');
+      const resultEl = document.getElementById('quiz-result');
+      const submitBtn = document.getElementById('quiz-submit-btn');
+
+      section.classList.remove('hidden');
+      resultEl.classList.add('hidden');
+      submitBtn.classList.remove('hidden');
+      container.innerHTML = '';
+
+      quizQuestions.forEach((q, i) => {
+        const qDiv = document.createElement('div');
+        qDiv.className = 'mb-6';
+        qDiv.innerHTML = `
+          <p class="font-semibold text-sm mb-3 text-zinc-200">Q${i + 1}: ${q.question}</p>
+          <div class="space-y-2" id="quiz-q-${i}">
+            ${q.options.map((opt, j) => `
+              <label class="quiz-option flex items-center gap-3 px-4 py-2.5 rounded-xl border border-zinc-700/40 cursor-pointer text-sm" data-q="${i}" data-opt="${j}">
+                <input type="radio" name="quiz_${i}" value="${opt}" class="hidden" onchange="selectQuizOpt(${i}, ${j}, '${opt.replace(/'/g, "\\'")}')" />
+                <span class="w-4 h-4 rounded-full border-2 border-zinc-600 flex-shrink-0 flex items-center justify-center transition-all">
+                  <span class="w-2 h-2 rounded-full bg-indigo-500 scale-0 transition-transform"></span>
+                </span>
+                <span>${opt}</span>
+              </label>
+            `).join('')}
+          </div>
+        `;
+        container.appendChild(qDiv);
+      });
+    }
+
+    function selectQuizOpt(qIdx, optIdx, value) {
+      quizAnswers[qIdx] = value;
+
+      // Update UI
+      const options = document.querySelectorAll(`[data-q="${qIdx}"]`);
+      options.forEach((el, j) => {
+        const dot = el.querySelector('span span');
+        if (j === optIdx) {
+          el.classList.add('selected');
+          el.querySelector('span:first-of-type').classList.replace('border-zinc-600', 'border-indigo-500');
+          dot.classList.replace('scale-0', 'scale-100');
+        } else {
+          el.classList.remove('selected');
+          el.querySelector('span:first-of-type').classList.replace('border-indigo-500', 'border-zinc-600');
+          dot.classList.replace('scale-100', 'scale-0');
+        }
+      });
+    }
+
+    async function submitQuiz() {
+      if (quizAnswers.some(a => a === null)) {
+        showToast('Please answer all questions', 'warning');
+        return;
+      }
+
+      const profile = getProfile();
+      const user = getUser();
+
+      try {
+        const res = await apiCall('/evaluate', 'POST', {
+          questions: quizQuestions,
+          answers: quizAnswers,
+          profile,
+          topic: currentTopic || 'General'
+        });
+
+        const score = res.score;
+        const updatedProfile = res.profile;
+        setProfile(updatedProfile);
+
+        // Save to backend
+        await apiCall('/save_profile', 'POST', {
+          user_id: user.user_id,
+          profile: updatedProfile
+        });
+
+        // Show results
+        const resultEl = document.getElementById('quiz-result');
+        const submitBtn = document.getElementById('quiz-submit-btn');
+        submitBtn.classList.add('hidden');
+        resultEl.classList.remove('hidden');
+
+        const pct = Math.round((score / quizQuestions.length) * 100);
+        const color = pct >= 70 ? 'text-emerald-400' : pct >= 40 ? 'text-amber-400' : 'text-red-400';
+
+        let html = `
+          <div class="glass rounded-xl p-5 mb-4">
+            <div class="text-center mb-3">
+              <span class="text-3xl font-bold ${color}">${score}/${quizQuestions.length}</span>
+              <p class="text-sm text-zinc-400 mt-1">${pct}% correct</p>
+            </div>
+          </div>
+          <div class="space-y-2">
+        `;
+
+        quizQuestions.forEach((q, i) => {
+          const selected = quizAnswers[i] ? quizAnswers[i][0].toLowerCase() : '';
+          const correct = q.answer;
+          const isCorrect = selected === correct;
+
+          html += `
+            <div class="flex items-center gap-2 px-3 py-2 rounded-lg ${isCorrect ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'} text-sm">
+              <span>${isCorrect ? '✅' : '❌'}</span>
+              <span>Q${i + 1}${isCorrect ? '' : ` — Correct: ${correct.toUpperCase()}`}</span>
+            </div>
+          `;
+
+          // Highlight in quiz UI
+          const options = document.querySelectorAll(`[data-q="${i}"]`);
+          options.forEach((el, j) => {
+            const optLetter = q.options[j][0].toLowerCase();
+            if (optLetter === correct) el.classList.add('correct');
+            else if (optLetter === selected && !isCorrect) el.classList.add('wrong');
+          });
+        });
+
+        html += '</div>';
+
+        // Get suggestion
+        try {
+          const sugRes = await apiCall('/suggest', 'POST', { profile: updatedProfile });
+          html += `
+            <div class="mt-5 glass rounded-xl p-4">
+              <p class="text-sm font-semibold text-indigo-400 mb-1">🧠 AI Recommendation</p>
+              <p class="text-sm text-zinc-300">${sugRes.suggestion}</p>
+            </div>
+          `;
+        } catch (e) { /* skip */ }
+
+        resultEl.innerHTML = html;
+
+        showToast(`Score: ${score}/${quizQuestions.length}`, pct >= 70 ? 'success' : 'warning');
+
+      } catch (err) {
+        showToast('Evaluation failed: ' + err.message, 'error');
+      }
+    }
+
+    // --- PDF Upload ---
+    document.getElementById('pdf-upload').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const user = getUser();
+      const statusEl = document.getElementById('pdf-status');
+      const labelEl = document.getElementById('pdf-label');
+
+      labelEl.textContent = file.name;
+      statusEl.textContent = 'Processing...';
+      statusEl.classList.remove('hidden');
+
+      const formData = new FormData();
+      formData.append('user_id', String(user.user_id));
+      formData.append('file', file);
+
+      try {
+        await apiUpload('/rag_upload', formData);
+        pdfUploaded = true;
+        statusEl.textContent = '✅ PDF loaded — Use Normal Tutor mode to query it';
+        statusEl.className = 'text-xs text-emerald-400 mt-1.5';
+        showToast('PDF processed successfully', 'success');
+      } catch (err) {
+        statusEl.textContent = '❌ ' + err.message;
+        statusEl.className = 'text-xs text-red-400 mt-1.5';
+        showToast('PDF upload failed', 'error');
+      }
+    });
+
+    // --- Reset ---
+    function resetChat() {
+      clearMessages();
+      pdfUploaded = false;
+      quizQuestions = [];
+      quizAnswers = [];
+      document.getElementById('quiz-section').classList.add('hidden');
+
+      const container = document.getElementById('chat-messages');
+      container.innerHTML = `
+        <div id="welcome-state" class="flex flex-col items-center justify-center h-full text-center">
+          <div class="w-16 h-16 rounded-2xl bg-indigo-600/15 flex items-center justify-center text-3xl mb-5">🎓</div>
+          <h2 class="text-2xl font-bold mb-2">Ready to Learn?</h2>
+          <p class="text-zinc-400 max-w-md text-sm leading-relaxed">Ask any topic below and your AI tutor will teach you with a personalized plan, explanation, and quiz.</p>
+        </div>`;
+
+      showToast('Chat cleared', 'info');
+    }
+
+    // --- Sidebar toggle ---
+    function toggleSidebar() {
+      const sb = document.getElementById('sidebar');
+      sb.classList.toggle('hidden');
+      sb.classList.toggle('fixed');
+      sb.classList.toggle('inset-0');
+      sb.classList.toggle('z-40');
+      sb.classList.toggle('w-72');
+    }
+
+    // Init
+    loadChat();
+  </script>
+</body>
+</html>

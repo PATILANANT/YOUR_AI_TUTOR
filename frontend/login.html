@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login — Your AI Tutor</title>
+  <meta name="description" content="Login or register to access your personalized AI tutor." />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter','system-ui','sans-serif'] } } } }
+  </script>
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .glass { background: rgba(255,255,255,0.04); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.06); }
+    .gradient-text { background: linear-gradient(135deg, #818cf8, #a78bfa, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  </style>
+</head>
+<body class="bg-zinc-950 text-zinc-100 min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
+
+  <!-- Background glow -->
+  <div class="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+
+  <div class="w-full max-w-md relative z-10">
+    <!-- Logo -->
+    <div class="text-center mb-8">
+      <a href="index.html" class="inline-flex items-center gap-2.5 mb-6">
+        <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-sm font-bold">AI</div>
+        <span class="text-xl font-semibold tracking-tight">Your AI Tutor</span>
+      </a>
+      <h1 class="text-2xl font-bold tracking-tight" id="form-title">Welcome Back</h1>
+      <p class="text-zinc-400 text-sm mt-1" id="form-subtitle">Sign in to continue learning</p>
+    </div>
+
+    <!-- Card -->
+    <div class="glass rounded-2xl p-8 glow-indigo" style="box-shadow: 0 0 60px rgba(99,102,241,0.08);">
+      <form id="auth-form" class="space-y-5">
+        <div>
+          <label for="username" class="block text-sm font-medium text-zinc-300 mb-1.5">Username</label>
+          <input id="username" type="text" required autocomplete="username"
+            class="w-full px-4 py-3 bg-zinc-900/80 border border-zinc-700/50 rounded-xl text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
+            placeholder="Enter your username" />
+        </div>
+
+        <div>
+          <label for="password" class="block text-sm font-medium text-zinc-300 mb-1.5">Password</label>
+          <input id="password" type="password" required autocomplete="current-password"
+            class="w-full px-4 py-3 bg-zinc-900/80 border border-zinc-700/50 rounded-xl text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
+            placeholder="Enter your password" />
+        </div>
+
+        <button id="submit-btn" type="submit"
+          class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-semibold text-sm transition-all duration-200 shadow-lg shadow-indigo-600/20 hover:shadow-indigo-500/30 flex items-center justify-center gap-2">
+          <span id="btn-text">Sign In</span>
+          <svg id="btn-spinner" class="hidden animate-spin h-4 w-4" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+        </button>
+      </form>
+
+      <div class="mt-6 text-center">
+        <p class="text-sm text-zinc-500">
+          <span id="toggle-text">Don't have an account?</span>
+          <button id="toggle-mode" class="text-indigo-400 hover:text-indigo-300 font-medium ml-1 transition-colors">Register</button>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script>
+    let isLogin = true;
+
+    const form = document.getElementById('auth-form');
+    const btnText = document.getElementById('btn-text');
+    const btnSpinner = document.getElementById('btn-spinner');
+    const toggleBtn = document.getElementById('toggle-mode');
+    const toggleText = document.getElementById('toggle-text');
+    const formTitle = document.getElementById('form-title');
+    const formSubtitle = document.getElementById('form-subtitle');
+
+    toggleBtn.addEventListener('click', () => {
+      isLogin = !isLogin;
+      if (isLogin) {
+        btnText.textContent = 'Sign In';
+        toggleBtn.textContent = 'Register';
+        toggleText.textContent = "Don't have an account?";
+        formTitle.textContent = 'Welcome Back';
+        formSubtitle.textContent = 'Sign in to continue learning';
+      } else {
+        btnText.textContent = 'Create Account';
+        toggleBtn.textContent = 'Sign In';
+        toggleText.textContent = 'Already have an account?';
+        formTitle.textContent = 'Get Started';
+        formSubtitle.textContent = 'Create your account to begin';
+      }
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value.trim();
+
+      if (!username || !password) {
+        showToast('Please fill in all fields', 'warning');
+        return;
+      }
+
+      btnSpinner.classList.remove('hidden');
+      btnText.textContent = isLogin ? 'Signing in...' : 'Creating account...';
+
+      try {
+        if (!isLogin) {
+          // Register
+          const regRes = await apiCall('/register', 'POST', { username, password });
+          console.log('Register response:', regRes);
+          showToast('Account created! Signing you in...', 'success');
+          // Auto-login after register
+        }
+
+        // Login
+        const res = await apiCall('/login', 'POST', { username, password });
+        console.log('Login response:', res);
+        setUser({ user_id: res.user_id, username });
+
+        // Load profile
+        const profileRes = await apiCall(`/load_profile/${res.user_id}`);
+        setProfile(profileRes.profile);
+
+        showToast('Welcome, ' + username + '!', 'success');
+        setTimeout(() => window.location.href = 'index.html', 800);
+
+      } catch (err) {
+        showToast(err.message, 'error');
+        btnText.textContent = isLogin ? 'Sign In' : 'Create Account';
+      } finally {
+        btnSpinner.classList.add('hidden');
+      }
+    });
+
+    // If already logged in, redirect
+    if (getUser()) {
+      window.location.href = 'index.html';
+    }
+  </script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-import google.generativeai as genai
+from google import genai
 
 load_dotenv()
 
@@ -10,6 +10,5 @@ COHERE_API_KEY = os.getenv("COHERE_API_KEY")
 if not GOOGLE_API_KEY or not COHERE_API_KEY:
     raise ValueError("Missing API keys in .env file")
 
-genai.configure(api_key=GOOGLE_API_KEY)
-
-model = genai.GenerativeModel("gemini-2.5-flash")
+client = genai.Client(api_key=GOOGLE_API_KEY)
+MODEL_NAME = "gemini-2.5-flash-lite"
