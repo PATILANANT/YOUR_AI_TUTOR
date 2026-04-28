@@ -39,32 +39,52 @@
   <!-- Content -->
   <main class="max-w-3xl mx-auto px-6 pt-24 pb-16">
     <h1 class="text-3xl font-bold tracking-tight mb-2">📚 Syllabus Manager</h1>
-    <p class="text-zinc-400 text-sm mb-8">Add your topics and the AI will guide you through each one in order.</p>
+    <p class="text-zinc-400 text-sm mb-6">Add your topics and the AI will guide you through each one in order.</p>
 
-    <!-- Add Topics -->
-    <div class="glass rounded-2xl p-6 mb-6">
-      <h2 class="text-sm font-semibold text-zinc-300 mb-3">Add Topics</h2>
-      <textarea id="topics-input" rows="3"
-        class="w-full px-4 py-3 bg-zinc-900/80 border border-zinc-700/50 rounded-xl text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 resize-none"
-        placeholder="Enter topics separated by commas, e.g. Photosynthesis, Cell Division, Genetics"></textarea>
-      <div class="flex gap-3 mt-4">
-        <button onclick="saveSyllabus()" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-indigo-600/20">
-          Save Syllabus
-        </button>
-        <button onclick="clearSyllabus()" class="px-5 py-2.5 border border-zinc-700/50 hover:border-red-500/30 text-zinc-400 hover:text-red-400 rounded-xl text-sm transition-all">
-          Clear All
-        </button>
+    <!-- Conversation Selector -->
+    <div class="glass rounded-2xl p-4 mb-6">
+      <div class="flex items-center gap-3 flex-wrap">
+        <label class="text-sm text-zinc-400 font-medium whitespace-nowrap">📂 Chat Session:</label>
+        <select id="conv-selector" onchange="onConvSelect()"
+          class="flex-1 min-w-[200px] px-4 py-2.5 bg-zinc-800/80 border border-zinc-700/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition-all">
+          <option value="">Loading conversations...</option>
+        </select>
       </div>
+      <p class="text-[11px] text-zinc-600 mt-2">Each chat session has its own independent syllabus.</p>
     </div>
 
-    <!-- Current Syllabus -->
-    <div class="glass rounded-2xl p-6">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-sm font-semibold text-zinc-300">Current Syllabus</h2>
-        <span id="topic-count" class="text-xs text-zinc-500 px-2.5 py-1 rounded-full bg-zinc-800">0 topics</span>
+    <!-- No conversation selected state -->
+    <div id="no-conv-state" class="glass rounded-2xl p-8 text-center hidden">
+      <p class="text-zinc-500">Select a chat session above to manage its syllabus, or start a new chat on the <a href="learning.html" class="text-indigo-400 hover:text-indigo-300">Learning page</a>.</p>
+    </div>
+
+    <!-- Syllabus content (shown when a conversation is selected) -->
+    <div id="syllabus-content">
+      <!-- Add Topics -->
+      <div class="glass rounded-2xl p-6 mb-6">
+        <h2 class="text-sm font-semibold text-zinc-300 mb-3">Add Topics</h2>
+        <textarea id="topics-input" rows="3"
+          class="w-full px-4 py-3 bg-zinc-900/80 border border-zinc-700/50 rounded-xl text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 resize-none"
+          placeholder="Enter topics separated by commas, e.g. Photosynthesis, Cell Division, Genetics"></textarea>
+        <div class="flex gap-3 mt-4">
+          <button onclick="saveSyllabus()" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-indigo-600/20">
+            Save Syllabus
+          </button>
+          <button onclick="clearSyllabus()" class="px-5 py-2.5 border border-zinc-700/50 hover:border-red-500/30 text-zinc-400 hover:text-red-400 rounded-xl text-sm transition-all">
+            Clear All
+          </button>
+        </div>
       </div>
-      <div id="syllabus-display" class="min-h-[60px]">
-        <p class="text-sm text-zinc-500">No topics added yet.</p>
+
+      <!-- Current Syllabus -->
+      <div class="glass rounded-2xl p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-sm font-semibold text-zinc-300">Current Syllabus</h2>
+          <span id="topic-count" class="text-xs text-zinc-500 px-2.5 py-1 rounded-full bg-zinc-800">0 topics</span>
+        </div>
+        <div id="syllabus-display" class="min-h-[60px]">
+          <p class="text-sm text-zinc-500">No topics added yet.</p>
+        </div>
       </div>
     </div>
   </main>
@@ -73,8 +93,65 @@
   <script>
     if (!requireAuth()) throw new Error("redirect");
 
+    let selectedConvId = getCurrentConversationId();
+
+    // ============================================
+    // CONVERSATION SELECTOR
+    // ============================================
+    async function populateConvSelector() {
+      const selector = document.getElementById('conv-selector');
+      try {
+        const convs = await loadConversationList();
+
+        if (convs.length === 0) {
+          selector.innerHTML = '<option value="">No conversations yet — start chatting!</option>';
+          document.getElementById('syllabus-content').classList.add('hidden');
+          document.getElementById('no-conv-state').classList.remove('hidden');
+          return;
+        }
+
+        selector.innerHTML = convs.map(c => {
+          const title = c.title || 'New Chat';
+          const shortTitle = title.length > 50 ? title.slice(0, 48) + '…' : title;
+          const selected = String(c.id) === String(selectedConvId) ? 'selected' : '';
+          return `<option value="${c.id}" ${selected}>${shortTitle}</option>`;
+        }).join('');
+
+        if (!selectedConvId && convs.length > 0) {
+          selectedConvId = String(convs[0].id);
+          selector.value = selectedConvId;
+        }
+
+        document.getElementById('syllabus-content').classList.remove('hidden');
+        document.getElementById('no-conv-state').classList.add('hidden');
+      } catch (e) {
+        console.error('Failed to load conversations:', e);
+        selector.innerHTML = '<option value="">Failed to load conversations</option>';
+      }
+    }
+
+    function onConvSelect() {
+      const selector = document.getElementById('conv-selector');
+      selectedConvId = selector.value;
+      if (selectedConvId) {
+        loadSyllabusData();
+      }
+    }
+
+    // ============================================
+    // LOAD AND RENDER SYLLABUS
+    // ============================================
+    async function loadSyllabusData() {
+      if (!selectedConvId) return;
+      const profile = await loadConversationProfileFromServer(selectedConvId);
+      if (profile) {
+        setProfile(profile, selectedConvId);
+      }
+      renderSyllabus();
+    }
+
     function renderSyllabus() {
-      const profile = getProfile();
+      const profile = getProfile(selectedConvId);
       const syllabus = profile.syllabus || [];
       const progress = profile.progress || {};
       const display = document.getElementById('syllabus-display');
@@ -109,6 +186,11 @@
     }
 
     async function saveSyllabus() {
+      if (!selectedConvId) {
+        showToast('Select a chat session first', 'warning');
+        return;
+      }
+
       const input = document.getElementById('topics-input');
       const raw = input.value.trim();
       if (!raw) {
@@ -117,18 +199,24 @@
       }
 
       const topics = raw.split(',').map(t => t.trim()).filter(t => t);
-      const profile = getProfile();
+      const profile = getProfile(selectedConvId);
 
       // Merge with existing
       const existing = profile.syllabus || [];
       const merged = [...new Set([...existing, ...topics])];
       profile.syllabus = merged;
-      setProfile(profile);
+      setProfile(profile, selectedConvId);
 
-      // Save to backend
+      // Save to backend (per-conversation)
       const user = getUser();
       try {
-        await apiCall('/save_profile', 'POST', { user_id: user.user_id, profile });
+        await saveConversationProfileToServer(selectedConvId, profile);
+        // Also save global profile
+        await apiCall('/save_profile', 'POST', {
+          user_id: user.user_id,
+          profile,
+          conversation_id: selectedConvId
+        });
         showToast('Syllabus saved ✅', 'success');
       } catch (e) {
         showToast('Saved locally (backend error)', 'warning');
@@ -139,13 +227,20 @@
     }
 
     async function clearSyllabus() {
-      const profile = getProfile();
+      if (!selectedConvId) return;
+
+      const profile = getProfile(selectedConvId);
       profile.syllabus = [];
-      setProfile(profile);
+      setProfile(profile, selectedConvId);
 
       const user = getUser();
       try {
-        await apiCall('/save_profile', 'POST', { user_id: user.user_id, profile });
+        await saveConversationProfileToServer(selectedConvId, profile);
+        await apiCall('/save_profile', 'POST', {
+          user_id: user.user_id,
+          profile,
+          conversation_id: selectedConvId
+        });
       } catch (e) { /* ignore */ }
 
       renderSyllabus();
@@ -153,19 +248,34 @@
     }
 
     async function removeTopic(index) {
-      const profile = getProfile();
+      if (!selectedConvId) return;
+
+      const profile = getProfile(selectedConvId);
       profile.syllabus.splice(index, 1);
-      setProfile(profile);
+      setProfile(profile, selectedConvId);
 
       const user = getUser();
       try {
-        await apiCall('/save_profile', 'POST', { user_id: user.user_id, profile });
+        await saveConversationProfileToServer(selectedConvId, profile);
+        await apiCall('/save_profile', 'POST', {
+          user_id: user.user_id,
+          profile,
+          conversation_id: selectedConvId
+        });
       } catch (e) { /* ignore */ }
 
       renderSyllabus();
     }
 
-    renderSyllabus();
+    // ============================================
+    // INIT
+    // ============================================
+    (async () => {
+      await populateConvSelector();
+      if (selectedConvId) {
+        loadSyllabusData();
+      }
+    })();
   </script>
 </body>
 </html>

@@ -38,7 +38,23 @@
 
   <!-- Content -->
   <main class="max-w-5xl mx-auto px-6 pt-24 pb-16">
-    <h1 class="text-3xl font-bold tracking-tight mb-8">📈 Performance Analysis</h1>
+    <h1 class="text-3xl font-bold tracking-tight mb-4">📈 Performance Analysis</h1>
+
+    <!-- Conversation Selector -->
+    <div class="glass rounded-2xl p-4 mb-8">
+      <div class="flex items-center gap-3 flex-wrap">
+        <label class="text-sm text-zinc-400 font-medium whitespace-nowrap">📂 Chat Session:</label>
+        <select id="conv-selector" onchange="onConvSelect()"
+          class="flex-1 min-w-[200px] px-4 py-2.5 bg-zinc-800/80 border border-zinc-700/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition-all">
+          <option value="">Loading conversations...</option>
+        </select>
+        <button onclick="loadAnalysisData()" class="px-4 py-2.5 bg-indigo-600/80 hover:bg-indigo-500 rounded-xl text-sm font-medium transition-all flex items-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          Refresh
+        </button>
+      </div>
+      <p class="text-[11px] text-zinc-600 mt-2">Each chat session has its own independent analysis and performance data.</p>
+    </div>
 
     <!-- Metrics -->
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
@@ -102,110 +118,189 @@
   <script>
     if (!requireAuth()) throw new Error("redirect");
 
-    const profile = getProfile();
-    const progress = profile.progress || {};
-    const weakTopics = profile.weak_topics || {};
-    const analysis = analyzePerformance(profile);
+    let selectedConvId = getCurrentConversationId();
+    let chartInstance = null;
 
-    const topics = Object.keys(progress);
-    const scores = Object.values(progress);
+    // ============================================
+    // CONVERSATION SELECTOR
+    // ============================================
+    async function populateConvSelector() {
+      const selector = document.getElementById('conv-selector');
+      try {
+        const convs = await loadConversationList();
 
-    // Metrics
-    document.getElementById('a-topics').textContent = topics.length;
-    document.getElementById('a-weak').textContent = Object.keys(weakTopics).length;
+        if (convs.length === 0) {
+          selector.innerHTML = '<option value="">No conversations yet — start chatting!</option>';
+          return;
+        }
 
-    if (topics.length > 0) {
-      const avg = (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1);
-      document.getElementById('a-avg').textContent = avg;
+        selector.innerHTML = convs.map(c => {
+          const title = c.title || 'New Chat';
+          const shortTitle = title.length > 50 ? title.slice(0, 48) + '…' : title;
+          const selected = String(c.id) === String(selectedConvId) ? 'selected' : '';
+          return `<option value="${c.id}" ${selected}>${shortTitle}</option>`;
+        }).join('');
+
+        if (!selectedConvId && convs.length > 0) {
+          selectedConvId = String(convs[0].id);
+          selector.value = selectedConvId;
+        }
+      } catch (e) {
+        console.error('Failed to load conversations:', e);
+        selector.innerHTML = '<option value="">Failed to load conversations</option>';
+      }
     }
 
-    // Chart
-    if (topics.length > 0) {
-      document.getElementById('no-data-chart').classList.add('hidden');
+    function onConvSelect() {
+      const selector = document.getElementById('conv-selector');
+      selectedConvId = selector.value;
+      if (selectedConvId) {
+        loadAnalysisData();
+      }
+    }
 
-      const ctx = document.getElementById('score-chart').getContext('2d');
-      new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: topics.map(t => t.length > 20 ? t.slice(0, 18) + '…' : t),
-          datasets: [{
-            label: 'Score',
-            data: scores,
-            backgroundColor: scores.map(s => {
-              if (s >= 8) return 'rgba(52, 211, 153, 0.6)';
-              if (s >= 4) return 'rgba(251, 191, 36, 0.6)';
-              return 'rgba(248, 113, 113, 0.6)';
-            }),
-            borderColor: scores.map(s => {
-              if (s >= 8) return '#34d399';
-              if (s >= 4) return '#fbbf24';
-              return '#f87171';
-            }),
-            borderWidth: 1,
-            borderRadius: 6,
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            y: {
-              beginAtZero: true,
-              grid: { color: 'rgba(255,255,255,0.04)' },
-              ticks: { color: '#a1a1aa', font: { family: 'Inter' } }
-            },
-            x: {
-              grid: { display: false },
-              ticks: { color: '#a1a1aa', font: { family: 'Inter', size: 11 } }
-            }
-          },
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              backgroundColor: '#18181b',
-              borderColor: 'rgba(255,255,255,0.1)',
+    // ============================================
+    // LOAD ANALYSIS DATA FOR SELECTED CONVERSATION
+    // ============================================
+    async function loadAnalysisData() {
+      if (!selectedConvId) return;
+
+      // Load conversation profile from server
+      const profile = await loadConversationProfileFromServer(selectedConvId);
+      const p = profile || { goal: null, syllabus: [], progress: {}, weak_topics: {} };
+
+      const progress = p.progress || {};
+      const weakTopics = p.weak_topics || {};
+      const analysis = analyzePerformance(p);
+
+      const topics = Object.keys(progress);
+      const scores = Object.values(progress);
+
+      // Metrics
+      document.getElementById('a-topics').textContent = topics.length;
+      document.getElementById('a-weak').textContent = Object.keys(weakTopics).length;
+
+      if (topics.length > 0) {
+        const avg = (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1);
+        document.getElementById('a-avg').textContent = avg;
+      } else {
+        document.getElementById('a-avg').textContent = '—';
+      }
+
+      // Chart
+      if (chartInstance) {
+        chartInstance.destroy();
+        chartInstance = null;
+      }
+
+      if (topics.length > 0) {
+        document.getElementById('no-data-chart').classList.add('hidden');
+
+        const ctx = document.getElementById('score-chart').getContext('2d');
+        chartInstance = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: topics.map(t => t.length > 20 ? t.slice(0, 18) + '…' : t),
+            datasets: [{
+              label: 'Score',
+              data: scores,
+              backgroundColor: scores.map(s => {
+                if (s >= 8) return 'rgba(52, 211, 153, 0.6)';
+                if (s >= 4) return 'rgba(251, 191, 36, 0.6)';
+                return 'rgba(248, 113, 113, 0.6)';
+              }),
+              borderColor: scores.map(s => {
+                if (s >= 8) return '#34d399';
+                if (s >= 4) return '#fbbf24';
+                return '#f87171';
+              }),
               borderWidth: 1,
-              titleFont: { family: 'Inter' },
-              bodyFont: { family: 'Inter' }
+              borderRadius: 6,
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                grid: { color: 'rgba(255,255,255,0.04)' },
+                ticks: { color: '#a1a1aa', font: { family: 'Inter' } }
+              },
+              x: {
+                grid: { display: false },
+                ticks: { color: '#a1a1aa', font: { family: 'Inter', size: 11 } }
+              }
+            },
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: '#18181b',
+                borderColor: 'rgba(255,255,255,0.1)',
+                borderWidth: 1,
+                titleFont: { family: 'Inter' },
+                bodyFont: { family: 'Inter' }
+              }
             }
           }
+        });
+      } else {
+        document.getElementById('no-data-chart').classList.remove('hidden');
+      }
+
+      // Strengths and Weaknesses
+      if (topics.length > 0) {
+        const sorted = topics.map((t, i) => ({ topic: t, score: scores[i] }));
+        const strong = sorted.filter(x => x.score >= 6).sort((a, b) => b.score - a.score);
+        const weak = sorted.filter(x => x.score < 6).sort((a, b) => a.score - b.score);
+
+        if (strong.length > 0) {
+          document.getElementById('a-strengths').innerHTML = strong.map(x => `
+            <div class="flex items-center justify-between px-3 py-2 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
+              <span class="text-sm text-zinc-200">${x.topic}</span>
+              <span class="text-xs font-medium text-emerald-400">${x.score} pts</span>
+            </div>
+          `).join('');
+        } else {
+          document.getElementById('a-strengths').innerHTML = '<p class="text-sm text-zinc-500">Complete some quizzes to see your strengths.</p>';
         }
-      });
-    }
 
-    // Strengths and Weaknesses
-    if (topics.length > 0) {
-      const sorted = topics.map((t, i) => ({ topic: t, score: scores[i] }));
-      const strong = sorted.filter(x => x.score >= 6).sort((a, b) => b.score - a.score);
-      const weak = sorted.filter(x => x.score < 6).sort((a, b) => a.score - b.score);
-
-      if (strong.length > 0) {
-        document.getElementById('a-strengths').innerHTML = strong.map(x => `
-          <div class="flex items-center justify-between px-3 py-2 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
-            <span class="text-sm text-zinc-200">${x.topic}</span>
-            <span class="text-xs font-medium text-emerald-400">${x.score} pts</span>
-          </div>
-        `).join('');
+        if (weak.length > 0) {
+          document.getElementById('a-weaknesses').innerHTML = weak.map(x => `
+            <div class="flex items-center justify-between px-3 py-2 rounded-lg bg-red-500/5 border border-red-500/10">
+              <span class="text-sm text-zinc-200">${x.topic}</span>
+              <span class="text-xs font-medium text-red-400">${x.score} pts</span>
+            </div>
+          `).join('');
+        } else {
+          document.getElementById('a-weaknesses').innerHTML = '<p class="text-sm text-zinc-500">No weak areas identified yet.</p>';
+        }
+      } else {
+        document.getElementById('a-strengths').innerHTML = '<p class="text-sm text-zinc-500">Complete some quizzes to see your strengths.</p>';
+        document.getElementById('a-weaknesses').innerHTML = '<p class="text-sm text-zinc-500">No weak areas identified yet.</p>';
       }
 
-      if (weak.length > 0) {
-        document.getElementById('a-weaknesses').innerHTML = weak.map(x => `
-          <div class="flex items-center justify-between px-3 py-2 rounded-lg bg-red-500/5 border border-red-500/10">
-            <span class="text-sm text-zinc-200">${x.topic}</span>
-            <span class="text-xs font-medium text-red-400">${x.score} pts</span>
-          </div>
-        `).join('');
-      }
-    }
-
-    // AI Suggestion
-    (async () => {
+      // AI Suggestion
       if (topics.length > 0) {
         try {
-          const res = await apiCall('/suggest', 'POST', { profile });
+          const res = await apiCall('/suggest', 'POST', { profile: p });
           document.getElementById('a-suggestion').textContent = res.suggestion;
           document.getElementById('a-suggestion-box').classList.remove('hidden');
-        } catch (e) { /* skip */ }
+        } catch (e) {
+          document.getElementById('a-suggestion-box').classList.add('hidden');
+        }
+      } else {
+        document.getElementById('a-suggestion-box').classList.add('hidden');
+      }
+    }
+
+    // ============================================
+    // INIT
+    // ============================================
+    (async () => {
+      await populateConvSelector();
+      if (selectedConvId) {
+        loadAnalysisData();
       }
     })();
   </script>

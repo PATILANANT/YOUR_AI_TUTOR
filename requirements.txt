@@ -11,3 +11,7 @@ langgraph
 requests
 fastapi
 uvicorn
+networkx
+youtube-transcript-api
+SpeechRecognition
+pydub

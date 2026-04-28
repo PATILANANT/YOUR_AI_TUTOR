@@ -6,6 +6,8 @@ class AgentRequest(BaseModel):
     target: str
     style: str
     profile: dict
+    conversation_id: Optional[int] = None
+    chat_history: Optional[List[dict]] = []
 
 class EvaluateRequest(BaseModel):
     questions: list
@@ -15,3 +17,10 @@ class EvaluateRequest(BaseModel):
 
 class SuggestRequest(BaseModel):
     profile: dict
+
+class ChatRequest(BaseModel):
+    query: str
+    language: Optional[str] = "English"
+    conversation_id: Optional[int] = None
+    chat_history: Optional[List[dict]] = []
+    profile: Optional[dict] = None

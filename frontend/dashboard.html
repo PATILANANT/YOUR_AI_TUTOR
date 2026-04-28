@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard — Your AI Tutor</title>
-  <meta name="description" content="Track your learning goals, progress, and insights." />
+  <meta name="description" content="Track your learning goals, progress, and topic mastery insights." />
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <script>
@@ -14,6 +14,11 @@
     body { font-family: 'Inter', system-ui, sans-serif; }
     .glass { background: rgba(255,255,255,0.04); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.06); }
     .gradient-text { background: linear-gradient(135deg, #818cf8, #a78bfa, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .mastery-bar { height:8px; border-radius:4px; background:rgba(255,255,255,0.06); overflow:hidden; }
+    .mastery-fill { height:100%; border-radius:4px; transition: width 0.8s cubic-bezier(.4,0,.2,1); }
+    .conv-option { transition: all 0.2s; }
+    .conv-option:hover { background: rgba(99,102,241,0.1); }
+    .conv-option.active { background: rgba(99,102,241,0.15); border-color: rgba(99,102,241,0.4); }
   </style>
 </head>
 <body class="bg-zinc-950 text-zinc-100 min-h-screen">
@@ -37,7 +42,23 @@
 
   <!-- Content -->
   <main class="max-w-5xl mx-auto px-6 pt-24 pb-16">
-    <h1 class="text-3xl font-bold tracking-tight mb-8">📊 Student Dashboard</h1>
+    <h1 class="text-3xl font-bold tracking-tight mb-4">📊 Student Dashboard</h1>
+
+    <!-- Conversation Selector -->
+    <div class="glass rounded-2xl p-4 mb-8">
+      <div class="flex items-center gap-3 flex-wrap">
+        <label class="text-sm text-zinc-400 font-medium whitespace-nowrap">📂 Chat Session:</label>
+        <select id="conv-selector" onchange="onConvSelect()"
+          class="flex-1 min-w-[200px] px-4 py-2.5 bg-zinc-800/80 border border-zinc-700/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition-all">
+          <option value="">Loading conversations...</option>
+        </select>
+        <button onclick="loadDashboardData()" class="px-4 py-2.5 bg-indigo-600/80 hover:bg-indigo-500 rounded-xl text-sm font-medium transition-all flex items-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          Refresh
+        </button>
+      </div>
+      <p class="text-[11px] text-zinc-600 mt-2">Each chat session has its own independent dashboard, syllabus, and analysis.</p>
+    </div>
 
     <!-- Metric Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
@@ -58,6 +79,41 @@
         <p id="d-weak" class="text-lg font-semibold text-amber-400">0</p>
       </div>
     </div>
+
+    <!-- ============================================ -->
+    <!-- TOPIC MASTERY SECTION -->
+    <!-- ============================================ -->
+    <section class="glass rounded-2xl p-6 mb-6">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-lg font-semibold flex items-center gap-2">🧠 Topic Mastery</h2>
+        <button onclick="refreshMastery()" class="text-xs text-indigo-400 hover:text-indigo-300 transition-colors">↻ Refresh</button>
+      </div>
+
+      <!-- Mastery Summary Cards -->
+      <div id="mastery-summary" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <div class="text-center py-4 px-3 rounded-xl bg-emerald-500/8 border border-emerald-500/15">
+          <div id="m-mastered" class="text-2xl font-bold text-emerald-400">0</div>
+          <div class="text-xs text-zinc-500 mt-1">Mastered</div>
+        </div>
+        <div class="text-center py-4 px-3 rounded-xl bg-indigo-500/8 border border-indigo-500/15">
+          <div id="m-proficient" class="text-2xl font-bold text-indigo-400">0</div>
+          <div class="text-xs text-zinc-500 mt-1">Proficient</div>
+        </div>
+        <div class="text-center py-4 px-3 rounded-xl bg-amber-500/8 border border-amber-500/15">
+          <div id="m-developing" class="text-2xl font-bold text-amber-400">0</div>
+          <div class="text-xs text-zinc-500 mt-1">Developing</div>
+        </div>
+        <div class="text-center py-4 px-3 rounded-xl bg-red-500/8 border border-red-500/15">
+          <div id="m-struggling" class="text-2xl font-bold text-red-400">0</div>
+          <div class="text-xs text-zinc-500 mt-1">Struggling</div>
+        </div>
+      </div>
+
+      <!-- Mastery Bars -->
+      <div id="mastery-list" class="space-y-3">
+        <p class="text-sm text-zinc-500">Take quizzes to start tracking your concept mastery.</p>
+      </div>
+    </section>
 
     <!-- Syllabus Overview -->
     <section class="glass rounded-2xl p-6 mb-6">
@@ -85,7 +141,7 @@
 
     <!-- Insights -->
     <section class="glass rounded-2xl p-6">
-      <h2 class="text-lg font-semibold mb-4">🧠 Insights</h2>
+      <h2 class="text-lg font-semibold mb-4">💡 Insights</h2>
       <div id="d-insights" class="text-sm text-zinc-400">
         <p>Start learning to see your insights here.</p>
       </div>
@@ -96,82 +152,233 @@
   <script>
     if (!requireAuth()) throw new Error("redirect");
 
-    const profile = getProfile();
-    const analysis = analyzePerformance(profile);
+    let selectedConvId = getCurrentConversationId();
 
-    // Goal
-    document.getElementById('d-goal').textContent = profile.goal || 'Not set';
+    // ============================================
+    // CONVERSATION SELECTOR
+    // ============================================
+    async function populateConvSelector() {
+      const selector = document.getElementById('conv-selector');
+      try {
+        const convs = await loadConversationList();
 
-    // Topics Covered
-    const progress = profile.progress || {};
-    const progressKeys = Object.keys(progress);
-    document.getElementById('d-topics').textContent = progressKeys.length;
+        if (convs.length === 0) {
+          selector.innerHTML = '<option value="">No conversations yet — start chatting!</option>';
+          return;
+        }
 
-    // Avg Score
-    if (progressKeys.length > 0) {
-      const vals = Object.values(progress);
-      const avg = (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(2);
-      document.getElementById('d-avg').textContent = avg;
+        selector.innerHTML = convs.map(c => {
+          const title = c.title || 'New Chat';
+          const shortTitle = title.length > 50 ? title.slice(0, 48) + '…' : title;
+          const selected = String(c.id) === String(selectedConvId) ? 'selected' : '';
+          return `<option value="${c.id}" ${selected}>${shortTitle}</option>`;
+        }).join('');
+
+        // If no conversation was selected, use the first one
+        if (!selectedConvId && convs.length > 0) {
+          selectedConvId = String(convs[0].id);
+          selector.value = selectedConvId;
+        }
+      } catch (e) {
+        console.error('Failed to load conversations:', e);
+        selector.innerHTML = '<option value="">Failed to load conversations</option>';
+      }
     }
 
-    // Weak topics count
-    const weakTopics = Object.keys(profile.weak_topics || {});
-    document.getElementById('d-weak').textContent = weakTopics.length;
-
-    // Syllabus
-    const syllabusEl = document.getElementById('d-syllabus');
-    const syllabus = profile.syllabus || [];
-    if (syllabus.length > 0 && syllabus[0]) {
-      syllabusEl.innerHTML = syllabus.map(t =>
-        `<span class="px-3 py-1.5 rounded-lg text-xs font-medium ${
-          progress[t] !== undefined
-            ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
-            : 'bg-zinc-800 text-zinc-400 border border-zinc-700/40'
-        }">${t}${progress[t] !== undefined ? ' ✓' : ''}</span>`
-      ).join('');
+    function onConvSelect() {
+      const selector = document.getElementById('conv-selector');
+      selectedConvId = selector.value;
+      if (selectedConvId) {
+        loadDashboardData();
+      }
     }
 
-    // Progress bars
-    const progressEl = document.getElementById('d-progress');
-    if (progressKeys.length > 0) {
-      progressEl.innerHTML = progressKeys.map(topic => {
-        const score = progress[topic];
-        const maxScore = 12; // approx max quiz questions
-        const pct = Math.min(Math.round((score / maxScore) * 100), 100);
-        const color = pct >= 70 ? 'bg-emerald-500' : pct >= 40 ? 'bg-amber-500' : 'bg-red-500';
-        return `
-          <div>
-            <div class="flex justify-between text-sm mb-1">
-              <span class="text-zinc-300">${topic}</span>
-              <span class="text-zinc-500">${score} pts</span>
+    // ============================================
+    // LOAD DASHBOARD DATA FOR SELECTED CONVERSATION
+    // ============================================
+    async function loadDashboardData() {
+      if (!selectedConvId) return;
+
+      // Load conversation profile from server
+      const profile = await loadConversationProfileFromServer(selectedConvId);
+      const p = profile || { goal: null, syllabus: [], progress: {}, weak_topics: {} };
+
+      // Goal
+      document.getElementById('d-goal').textContent = p.goal || 'Not set';
+
+      // Topics Covered
+      const progress = p.progress || {};
+      const progressKeys = Object.keys(progress);
+      document.getElementById('d-topics').textContent = progressKeys.length;
+
+      // Avg Score
+      if (progressKeys.length > 0) {
+        const vals = Object.values(progress);
+        const avg = (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(2);
+        document.getElementById('d-avg').textContent = avg;
+      } else {
+        document.getElementById('d-avg').textContent = '—';
+      }
+
+      // Weak topics count
+      const weakTopics = Object.keys(p.weak_topics || {});
+      document.getElementById('d-weak').textContent = weakTopics.length;
+
+      // Syllabus
+      const syllabusEl = document.getElementById('d-syllabus');
+      const syllabus = p.syllabus || [];
+      if (syllabus.length > 0 && syllabus[0]) {
+        syllabusEl.innerHTML = syllabus.map(t =>
+          `<span class="px-3 py-1.5 rounded-lg text-xs font-medium ${
+            progress[t] !== undefined
+              ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
+              : 'bg-zinc-800 text-zinc-400 border border-zinc-700/40'
+          }">${t}${progress[t] !== undefined ? ' ✓' : ''}</span>`
+        ).join('');
+      } else {
+        syllabusEl.innerHTML = '<p class="text-sm text-zinc-500">No syllabus set yet.</p>';
+      }
+
+      // Progress bars
+      const progressEl = document.getElementById('d-progress');
+      if (progressKeys.length > 0) {
+        progressEl.innerHTML = progressKeys.map(topic => {
+          const score = progress[topic];
+          const maxScore = 12;
+          const pct = Math.min(Math.round((score / maxScore) * 100), 100);
+          const color = pct >= 70 ? 'bg-emerald-500' : pct >= 40 ? 'bg-amber-500' : 'bg-red-500';
+          return `
+            <div>
+              <div class="flex justify-between text-sm mb-1">
+                <span class="text-zinc-300">${topic}</span>
+                <span class="text-zinc-500">${score} pts</span>
+              </div>
+              <div class="h-2 bg-zinc-800 rounded-full overflow-hidden">
+                <div class="h-full ${color} rounded-full transition-all duration-500" style="width:${pct}%"></div>
+              </div>
             </div>
-            <div class="h-2 bg-zinc-800 rounded-full overflow-hidden">
-              <div class="h-full ${color} rounded-full transition-all duration-500" style="width:${pct}%"></div>
+          `;
+        }).join('');
+      } else {
+        progressEl.innerHTML = '<p class="text-sm text-zinc-500">No progress data yet.</p>';
+      }
+
+      // Weak topics
+      const weakEl = document.getElementById('d-weak-list');
+      if (weakTopics.length > 0) {
+        weakEl.innerHTML = weakTopics.map(t =>
+          `<span class="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500/15 text-red-400 border border-red-500/20">${t}</span>`
+        ).join('');
+      } else {
+        weakEl.innerHTML = '<p class="text-sm text-zinc-500">No weak topics identified.</p>';
+      }
+
+      // Insights
+      const insightsEl = document.getElementById('d-insights');
+      const analysis = analyzePerformance(p);
+      if (analysis.avg_score !== undefined) {
+        insightsEl.innerHTML = `
+          <div class="space-y-2">
+            <p>📊 <strong class="text-zinc-200">Average Score:</strong> ${analysis.avg_score.toFixed(2)}</p>
+            <p>📘 <strong class="text-zinc-200">Topics Covered:</strong> ${analysis.total_topics}</p>
+            <p>⚠️ <strong class="text-zinc-200">Weak Topics:</strong> ${analysis.weak_topics.length > 0 ? analysis.weak_topics.join(', ') : 'None'}</p>
+          </div>
+        `;
+      } else {
+        insightsEl.innerHTML = '<p>Start learning to see your insights here.</p>';
+      }
+
+      // Load mastery for this conversation
+      refreshMastery();
+    }
+
+    // ============================================
+    // TOPIC MASTERY — Load per conversation
+    // ============================================
+    async function refreshMastery() {
+      if (!selectedConvId) {
+        // Fall back to user-level mastery
+        const user = getUser();
+        if (!user) return;
+        try {
+          const res = await apiCall(`/mastery/${user.user_id}`);
+          renderMasteryData(res.mastery || [], res.summary || {});
+        } catch (e) {
+          console.error('Mastery load error:', e);
+        }
+        return;
+      }
+
+      try {
+        const res = await loadConversationMasteryFromServer(selectedConvId);
+        if (res) {
+          renderMasteryData(res.mastery || [], res.summary || {});
+        }
+      } catch (e) {
+        console.error('Conversation mastery load error:', e);
+      }
+    }
+
+    function renderMasteryData(mastery, summary) {
+      // Update summary cards
+      document.getElementById('m-mastered').textContent = summary.mastered || 0;
+      document.getElementById('m-proficient').textContent = summary.proficient || 0;
+      document.getElementById('m-developing').textContent = summary.developing || 0;
+      document.getElementById('m-struggling').textContent = summary.struggling || 0;
+
+      // Build mastery bars
+      const listEl = document.getElementById('mastery-list');
+
+      if (mastery.length === 0) {
+        listEl.innerHTML = '<p class="text-sm text-zinc-500">Take quizzes to start tracking your concept mastery.</p>';
+        return;
+      }
+
+      listEl.innerHTML = mastery.map(m => {
+        const score = Math.round(m.score || 0);
+        const level = m.mastery_level || 'unlearned';
+        const attempts = m.attempts || 0;
+        const concept = m.concept || '';
+
+        // Color based on level
+        let barColor, badgeBg, badgeText;
+        if (level === 'mastered')       { barColor = 'bg-emerald-400'; badgeBg = 'bg-emerald-500/15'; badgeText = 'text-emerald-400'; }
+        else if (level === 'proficient'){ barColor = 'bg-indigo-400';  badgeBg = 'bg-indigo-500/15';  badgeText = 'text-indigo-400'; }
+        else if (level === 'developing'){ barColor = 'bg-amber-400';   badgeBg = 'bg-amber-500/15';   badgeText = 'text-amber-400'; }
+        else                            { barColor = 'bg-red-400';     badgeBg = 'bg-red-500/15';     badgeText = 'text-red-400'; }
+
+        // Capitalize concept name
+        const displayName = concept.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
+        return `
+          <div class="flex items-center gap-4 py-3 px-4 rounded-xl bg-zinc-800/30 border border-zinc-700/20 hover:border-zinc-600/30 transition-all">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="text-sm font-medium text-zinc-200 truncate" title="${displayName}">${displayName}</span>
+                <span class="text-[10px] px-2 py-0.5 rounded-full font-medium ${badgeBg} ${badgeText} uppercase tracking-wider">${level}</span>
+              </div>
+              <div class="mastery-bar">
+                <div class="mastery-fill ${barColor}" style="width:${score}%"></div>
+              </div>
+            </div>
+            <div class="text-right flex-shrink-0">
+              <div class="text-lg font-bold ${badgeText}">${score}%</div>
+              <div class="text-[10px] text-zinc-600">${attempts} attempt${attempts !== 1 ? 's' : ''}</div>
             </div>
           </div>
         `;
       }).join('');
     }
 
-    // Weak topics
-    const weakEl = document.getElementById('d-weak-list');
-    if (weakTopics.length > 0) {
-      weakEl.innerHTML = weakTopics.map(t =>
-        `<span class="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500/15 text-red-400 border border-red-500/20">${t}</span>`
-      ).join('');
-    }
-
-    // Insights
-    const insightsEl = document.getElementById('d-insights');
-    if (analysis.avg_score !== undefined) {
-      insightsEl.innerHTML = `
-        <div class="space-y-2">
-          <p>📊 <strong class="text-zinc-200">Average Score:</strong> ${analysis.avg_score.toFixed(2)}</p>
-          <p>📘 <strong class="text-zinc-200">Topics Covered:</strong> ${analysis.total_topics}</p>
-          <p>⚠️ <strong class="text-zinc-200">Weak Topics:</strong> ${analysis.weak_topics.length > 0 ? analysis.weak_topics.join(', ') : 'None'}</p>
-        </div>
-      `;
-    }
+    // ============================================
+    // INIT
+    // ============================================
+    (async () => {
+      await populateConvSelector();
+      if (selectedConvId) {
+        loadDashboardData();
+      }
+    })();
   </script>
 </body>
 </html>

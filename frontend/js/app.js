@@ -19,15 +19,27 @@ function clearUser() {
   localStorage.removeItem("ai_tutor_user");
 }
 
-function getProfile() {
-  const raw = localStorage.getItem("ai_tutor_profile");
+function getProfile(convId) {
+  const key = convId ? `ai_tutor_profile_${convId}` : "ai_tutor_profile";
+  const raw = localStorage.getItem(key);
   return raw
     ? JSON.parse(raw)
     : { goal: null, syllabus: [], progress: {}, weak_topics: {} };
 }
 
-function setProfile(profile) {
-  localStorage.setItem("ai_tutor_profile", JSON.stringify(profile));
+function setProfile(profile, convId) {
+  const key = convId ? `ai_tutor_profile_${convId}` : "ai_tutor_profile";
+  localStorage.setItem(key, JSON.stringify(profile));
+  // Also update global profile for backward compatibility
+  if (convId) {
+    localStorage.setItem("ai_tutor_profile", JSON.stringify(profile));
+  }
+}
+
+function clearConversationProfile(convId) {
+  if (convId) {
+    localStorage.removeItem(`ai_tutor_profile_${convId}`);
+  }
 }
 
 function getMessages() {
@@ -41,6 +53,134 @@ function setMessages(messages) {
 
 function clearMessages() {
   localStorage.removeItem("ai_tutor_messages");
+}
+
+// ---------- Conversation Management ----------
+
+function getCurrentConversationId() {
+  return localStorage.getItem("ai_tutor_current_conv_id");
+}
+
+function setCurrentConversationId(id) {
+  localStorage.setItem("ai_tutor_current_conv_id", String(id));
+}
+
+function clearCurrentConversationId() {
+  localStorage.removeItem("ai_tutor_current_conv_id");
+}
+
+async function createConversation(title = "New Chat") {
+  const user = getUser();
+  if (!user) return null;
+  const res = await apiCall("/conversations", "POST", {
+    user_id: user.user_id,
+    title,
+  });
+  setCurrentConversationId(res.conversation_id);
+  return res.conversation_id;
+}
+
+async function loadConversationList() {
+  const user = getUser();
+  if (!user) return [];
+  const res = await apiCall(`/conversations/${user.user_id}`);
+  return res.conversations || [];
+}
+
+async function loadConversationMessages(convId) {
+  const user = getUser();
+  if (!user || !convId) return [];
+  const res = await apiCall(`/messages/${convId}`);
+  return res.messages || [];
+}
+
+async function saveMessageToServer(role, content) {
+  const user = getUser();
+  if (!user) return;
+
+  let convId = getCurrentConversationId();
+
+  // Auto-create a conversation if none is active
+  if (!convId) {
+    convId = await createConversation("New Chat");
+  }
+
+  const res = await apiCall(`/conversations/${convId}/message`, "POST", {
+    role,
+    content,
+    user_id: user.user_id,
+  });
+
+  // If the server auto-titled the conversation, refresh sidebar
+  if (res.auto_title && typeof refreshConversationList === "function") {
+    refreshConversationList();
+  }
+
+  return res;
+}
+
+// ---------- Conversation Profile API ----------
+
+async function loadConversationProfileFromServer(convId) {
+  if (!convId) return null;
+  try {
+    const res = await apiCall(`/conversations/${convId}/profile`);
+    return res.profile || null;
+  } catch (e) {
+    console.error('Failed to load conversation profile:', e);
+    return null;
+  }
+}
+
+async function saveConversationProfileToServer(convId, profile) {
+  const user = getUser();
+  if (!user || !convId) return;
+  try {
+    await apiCall(`/conversations/${convId}/profile`, "POST", {
+      user_id: user.user_id,
+      profile
+    });
+  } catch (e) {
+    console.error('Failed to save conversation profile:', e);
+  }
+}
+
+async function loadConversationMasteryFromServer(convId) {
+  if (!convId) return null;
+  try {
+    const res = await apiCall(`/conversations/${convId}/mastery`);
+    return res;
+  } catch (e) {
+    console.error('Failed to load conversation mastery:', e);
+    return null;
+  }
+}
+
+async function loadUserConversationsWithProfiles() {
+  const user = getUser();
+  if (!user) return [];
+  try {
+    const res = await apiCall(`/user/${user.user_id}/conversations_with_profiles`);
+    return res.conversations || [];
+  } catch (e) {
+    console.error('Failed to load conversations with profiles:', e);
+    return [];
+  }
+}
+
+async function renameConversationAPI(convId, newTitle) {
+  const user = getUser();
+  if (!user) return;
+  await apiCall(`/conversations/${convId}/rename`, "PUT", {
+    user_id: user.user_id,
+    title: newTitle,
+  });
+}
+
+async function deleteConversationAPI(convId) {
+  const user = getUser();
+  if (!user) return;
+  await apiCall(`/conversations/${convId}?user_id=${user.user_id}`, "DELETE");
 }
 
 // ---------- Auth Guard ----------
@@ -198,7 +338,12 @@ function updateNavAuth() {
 function logout() {
   clearUser();
   clearMessages();
-  localStorage.removeItem("ai_tutor_profile");
+  clearCurrentConversationId();
+  // Clear all conversation profiles from localStorage
+  const keys = Object.keys(localStorage);
+  keys.forEach(k => {
+    if (k.startsWith('ai_tutor_profile')) localStorage.removeItem(k);
+  });
   showToast("Logged out", "info");
   setTimeout(() => (window.location.href = "index.html"), 500);
 }
