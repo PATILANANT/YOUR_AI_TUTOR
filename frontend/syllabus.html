@@ -4,35 +4,62 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Syllabus — Your AI Tutor</title>
-  <meta name="description" content="Manage your syllabus and organize learning topics." />
+  <meta name="description" content="Manage your syllabus and organize your learning topics per chat session." />
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-  <script>
-    tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter','system-ui','sans-serif'] } } } }
-  </script>
+  <link rel="stylesheet" href="css/theme.css" />
   <style>
-    body { font-family: 'Inter', system-ui, sans-serif; }
-    .glass { background: rgba(255,255,255,0.04); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.06); }
     .topic-chip { transition: all 0.2s; }
     .topic-chip:hover .remove-btn { opacity: 1; }
+    #mobile-nav { transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); }
+    #mobile-nav.open { transform: translateX(0); }
   </style>
 </head>
-<body class="bg-zinc-950 text-zinc-100 min-h-screen">
+<body style="background:#09090b; color:#f4f4f5; font-family:'Inter',sans-serif;">
+
+  <div id="mobile-overlay" class="mobile-overlay" onclick="toggleMobileNav()"></div>
+  <div id="mobile-nav" class="fixed top-0 left-0 h-full w-64 z-[110] flex flex-col"
+       style="background:#0f0f12; border-right:1px solid rgba(255,255,255,0.06);">
+    <div class="p-5" style="border-bottom:1px solid rgba(255,255,255,0.06);">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-xs font-bold">AI</div>
+        <span class="font-semibold">Your AI Tutor</span>
+      </div>
+    </div>
+    <nav class="flex-1 p-4 space-y-1">
+      <a href="learning.html"  class="nav-link flex items-center gap-3 w-full">📘 Learning</a>
+      <a href="dashboard.html" class="nav-link flex items-center gap-3 w-full">📊 Dashboard</a>
+      <a href="syllabus.html"  class="nav-link active flex items-center gap-3 w-full">📚 Syllabus</a>
+      <a href="analysis.html"  class="nav-link flex items-center gap-3 w-full">📈 Analysis</a>
+    </nav>
+    <div class="p-4" style="border-top:1px solid rgba(255,255,255,0.06);">
+      <div id="mobile-auth"></div>
+    </div>
+  </div>
+
 
   <!-- Navbar -->
-  <nav class="fixed top-0 left-0 right-0 z-50 glass border-b border-zinc-800/50">
-    <div class="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-      <a href="index.html" class="flex items-center gap-2">
-        <div class="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center text-xs font-bold">AI</div>
-        <span class="text-base font-semibold tracking-tight">Your AI Tutor</span>
+  <nav class="navbar px-4 md:px-6">
+    <div class="max-w-6xl mx-auto w-full flex items-center justify-between">
+      <a href="index.html" class="flex items-center gap-2 group">
+        <div class="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center text-xs font-bold group-hover:bg-indigo-500 transition-colors">AI</div>
+        <span class="text-[15px] font-semibold tracking-tight">Your AI Tutor</span>
       </a>
       <div class="hidden md:flex items-center gap-1">
-        <a href="learning.html" class="px-3 py-1.5 text-sm text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800/60 transition-all">Learning</a>
-        <a href="dashboard.html" class="px-3 py-1.5 text-sm text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800/60 transition-all">Dashboard</a>
-        <a href="syllabus.html" class="px-3 py-1.5 text-sm text-indigo-400 bg-indigo-500/10 rounded-lg font-medium">Syllabus</a>
-        <a href="analysis.html" class="px-3 py-1.5 text-sm text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800/60 transition-all">Analysis</a>
+        <a href="learning.html"  class="nav-link">Learning</a>
+        <a href="dashboard.html" class="nav-link">Dashboard</a>
+        <a href="syllabus.html"  class="nav-link active">Syllabus</a>
+        <a href="analysis.html"  class="nav-link">Analysis</a>
       </div>
-      <div id="nav-auth" class="flex items-center gap-3"></div>
+      <div class="flex items-center gap-2">
+        <div id="nav-auth" class="hidden md:flex items-center gap-2"></div>
+        <button class="md:hidden p-2 rounded-lg hover:bg-zinc-800/60 transition-colors" onclick="toggleMobileNav()">
+          <svg class="w-5 h-5" style="color:#71717a;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+      </div>
     </div>
   </nav>
 

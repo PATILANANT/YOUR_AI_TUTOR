@@ -3,138 +3,362 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Your AI Tutor — Learn Smarter</title>
-  <meta name="description" content="AI-powered personalized tutor with adaptive learning, quizzes, and performance tracking." />
+  <title>Your AI Tutor — Learn Smarter with AI</title>
+  <meta name="description" content="AI-powered personalized tutor with adaptive learning, quizzes, knowledge graphs, and real-time performance tracking." />
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
-        }
-      }
-    }
-  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/theme.css" />
   <style>
-    body { font-family: 'Inter', system-ui, sans-serif; }
-    .glass { background: rgba(255,255,255,0.04); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.06); }
-    .glow-indigo { box-shadow: 0 0 40px rgba(99,102,241,0.15); }
-    .gradient-text { background: linear-gradient(135deg, #818cf8, #a78bfa, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-    .feature-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
-    .feature-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-    @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
-    .float-anim { animation: float 4s ease-in-out infinite; }
+    .hero-grid {
+      background-image:
+        linear-gradient(rgba(99,102,241,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(99,102,241,0.04) 1px, transparent 1px);
+      background-size: 48px 48px;
+    }
+    .feature-card {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .feature-card:hover {
+      transform: translateY(-5px);
+      border-color: rgba(99,102,241,0.3);
+      box-shadow: 0 20px 48px rgba(0,0,0,0.4), 0 0 0 1px rgba(99,102,241,0.1);
+    }
+    .stat-item {
+      animation: fade-up 0.5s ease forwards;
+      opacity: 0;
+    }
+    .glow-blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+    }
+    /* Mobile nav drawer */
+    #mobile-nav {
+      transform: translateX(-100%);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    #mobile-nav.open {
+      transform: translateX(0);
+    }
   </style>
 </head>
-<body class="bg-zinc-950 text-zinc-100 min-h-screen">
+<body style="background:#09090b; color:#f4f4f5; font-family:'Inter',sans-serif;">
 
-  <!-- Navbar -->
-  <nav class="fixed top-0 left-0 right-0 z-50 glass border-b border-zinc-800/50">
-    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-      <a href="index.html" class="flex items-center gap-2.5">
-        <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-sm font-bold">AI</div>
-        <span class="text-lg font-semibold tracking-tight">Your AI Tutor</span>
+  <!-- ============================================================
+       NAVBAR
+  ============================================================ -->
+  <nav class="navbar px-4 md:px-6">
+    <div class="max-w-6xl mx-auto w-full flex items-center justify-between">
+
+      <!-- Logo -->
+      <a href="index.html" class="flex items-center gap-2.5 group">
+        <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-xs font-bold shadow-lg shadow-indigo-600/30 group-hover:bg-indigo-500 transition-colors">AI</div>
+        <span class="text-[15px] font-semibold tracking-tight">Your AI Tutor</span>
       </a>
 
+      <!-- Desktop Nav -->
       <div class="hidden md:flex items-center gap-1">
-        <a href="learning.html" class="px-3.5 py-2 text-sm text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800/60 transition-all">Learning</a>
-        <a href="dashboard.html" class="px-3.5 py-2 text-sm text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800/60 transition-all">Dashboard</a>
-        <a href="syllabus.html" class="px-3.5 py-2 text-sm text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800/60 transition-all">Syllabus</a>
-        <a href="analysis.html" class="px-3.5 py-2 text-sm text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800/60 transition-all">Analysis</a>
+        <a href="learning.html"  class="nav-link">Learning</a>
+        <a href="dashboard.html" class="nav-link">Dashboard</a>
+        <a href="syllabus.html"  class="nav-link">Syllabus</a>
+        <a href="analysis.html"  class="nav-link">Analysis</a>
       </div>
 
-      <div id="nav-auth" class="flex items-center gap-3"></div>
+      <!-- Right Side -->
+      <div class="flex items-center gap-2">
+        <div id="nav-auth" class="hidden md:flex items-center gap-2"></div>
+
+        <!-- Mobile hamburger -->
+        <button id="hamburger-btn" class="md:hidden p-2 rounded-lg hover:bg-zinc-800/60 transition-colors" onclick="toggleMobileNav()">
+          <svg id="menu-icon" class="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+      </div>
     </div>
   </nav>
 
-  <!-- Hero Section -->
-  <section class="pt-32 pb-20 px-6 relative overflow-hidden">
-    <!-- Subtle bg gradient -->
-    <div class="absolute inset-0 pointer-events-none">
-      <div class="absolute top-20 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-indigo-600/10 rounded-full blur-[120px]"></div>
+  <!-- Mobile Nav Drawer -->
+  <div id="mobile-overlay" class="mobile-overlay" onclick="toggleMobileNav()"></div>
+  <div id="mobile-nav" class="fixed top-0 left-0 h-full w-64 z-[110] flex flex-col"
+       style="background:#0f0f12; border-right:1px solid rgba(255,255,255,0.06);">
+    <div class="p-5 border-b" style="border-color:rgba(255,255,255,0.06);">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-xs font-bold">AI</div>
+        <span class="font-semibold">Your AI Tutor</span>
+      </div>
     </div>
+    <nav class="flex-1 p-4 space-y-1">
+      <a href="index.html"    class="nav-link flex items-center gap-3 w-full">🏠 Home</a>
+      <a href="learning.html" class="nav-link flex items-center gap-3 w-full">📘 Learning</a>
+      <a href="dashboard.html"class="nav-link flex items-center gap-3 w-full">📊 Dashboard</a>
+      <a href="syllabus.html" class="nav-link flex items-center gap-3 w-full">📚 Syllabus</a>
+      <a href="analysis.html" class="nav-link flex items-center gap-3 w-full">📈 Analysis</a>
+    </nav>
+    <div class="p-4 border-t" style="border-color:rgba(255,255,255,0.06);">
+      <div id="mobile-auth"></div>
+    </div>
+  </div>
 
-    <div class="max-w-4xl mx-auto text-center relative z-10">
-      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass text-xs text-indigo-300 font-medium mb-8 tracking-wide">
+  <!-- ============================================================
+       HERO
+  ============================================================ -->
+  <section class="hero-grid relative min-h-screen flex items-center justify-center px-4 pt-16">
+    <!-- Glowing blobs -->
+    <div class="glow-blob w-[600px] h-[600px] bg-indigo-600/10 top-10 left-1/2 -translate-x-1/2"></div>
+    <div class="glow-blob w-[300px] h-[300px] bg-violet-600/8 top-40 right-10"></div>
+    <div class="glow-blob w-[250px] h-[250px] bg-indigo-500/8 bottom-20 left-10"></div>
+
+    <div class="max-w-4xl mx-auto text-center relative z-10 py-20">
+      <!-- Badge -->
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass text-xs font-semibold mb-8 tracking-wide animate-fade-up"
+           style="color:#818cf8; animation-delay:0s">
         <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse"></span>
-        AI-Powered Personalized Learning
+        AI-Powered Personalized Learning System
+        <span class="badge badge-indigo ml-1">Beta</span>
       </div>
 
-      <h1 class="text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.1] mb-6">
+      <!-- Headline -->
+      <h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[1.08] mb-6 animate-fade-up"
+          style="animation-delay:0.08s; opacity:0;">
         Learn Smarter with<br />
         <span class="gradient-text">Your AI Tutor</span>
       </h1>
 
-      <p class="text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-        Adaptive teaching, intelligent quizzes, and real-time performance tracking — all personalized for your learning goals.
+      <!-- Subheadline -->
+      <p class="text-base sm:text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed animate-fade-up"
+         style="color:#a1a1aa; animation-delay:0.16s; opacity:0;">
+        Adaptive teaching, intelligent quizzes, mastery tracking, PDF & YouTube learning —
+        all personalized for your goals. Powered by Gemini AI.
       </p>
 
-      <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
-        <a href="learning.html" id="hero-cta" class="px-8 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-semibold transition-all duration-200 shadow-lg shadow-indigo-600/25 hover:shadow-indigo-500/40 text-sm">
-          Start Learning →
+      <!-- CTAs -->
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-3 mb-16 animate-fade-up"
+           style="animation-delay:0.24s; opacity:0;">
+        <a href="learning.html" id="hero-cta"
+           class="btn btn-primary btn-lg w-full sm:w-auto">
+          Start Learning Free →
         </a>
-        <a href="#features" class="px-8 py-3.5 glass hover:bg-zinc-800/60 text-zinc-300 hover:text-white rounded-xl font-medium transition-all duration-200 text-sm">
+        <a href="#features"
+           class="btn btn-secondary btn-lg w-full sm:w-auto">
           Explore Features
         </a>
       </div>
+
+      <!-- Stats Row -->
+      <div class="grid grid-cols-3 gap-4 max-w-lg mx-auto stagger">
+        <div class="glass rounded-xl py-3 text-center">
+          <div class="text-xl font-bold gradient-text">7+</div>
+          <div class="text-[11px] mt-0.5" style="color:#71717a;">Core Features</div>
+        </div>
+        <div class="glass rounded-xl py-3 text-center">
+          <div class="text-xl font-bold gradient-text">AI</div>
+          <div class="text-[11px] mt-0.5" style="color:#71717a;">Gemini Powered</div>
+        </div>
+        <div class="glass rounded-xl py-3 text-center">
+          <div class="text-xl font-bold gradient-text">∞</div>
+          <div class="text-[11px] mt-0.5" style="color:#71717a;">Topics to Learn</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scroll indicator -->
+    <div class="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-fade-in" style="animation-delay:0.6s; opacity:0;">
+      <span class="text-xs" style="color:#52525b;">Scroll to explore</span>
+      <div class="w-px h-8 bg-gradient-to-b from-indigo-500/50 to-transparent"></div>
     </div>
   </section>
 
-  <!-- Features -->
-  <section id="features" class="py-20 px-6">
+  <!-- ============================================================
+       FEATURES GRID
+  ============================================================ -->
+  <section id="features" class="py-20 md:py-28 px-4">
     <div class="max-w-6xl mx-auto">
-      <div class="text-center mb-16">
-        <h2 class="text-3xl md:text-4xl font-bold tracking-tight mb-4">Everything You Need</h2>
-        <p class="text-zinc-400 text-lg max-w-xl mx-auto">A complete AI-powered learning ecosystem designed to accelerate your understanding.</p>
+      <div class="text-center mb-14">
+        <span class="badge badge-indigo mb-4">Features</span>
+        <h2 class="text-3xl md:text-4xl font-bold tracking-tight mb-4">Everything You Need to Excel</h2>
+        <p class="text-base max-w-xl mx-auto" style="color:#a1a1aa;">
+          A complete AI-powered learning ecosystem built to accelerate understanding and retention.
+        </p>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 stagger">
+
         <!-- Learning -->
-        <a href="learning.html" class="feature-card glass rounded-2xl p-6 cursor-pointer group">
-          <div class="w-12 h-12 rounded-xl bg-indigo-600/15 flex items-center justify-center text-xl mb-5 group-hover:bg-indigo-600/25 transition-colors">📘</div>
-          <h3 class="text-lg font-semibold mb-2">Learning</h3>
-          <p class="text-sm text-zinc-400 leading-relaxed">Chat with your AI tutor, get personalized explanations, and take adaptive quizzes.</p>
+        <a href="learning.html" class="feature-card card cursor-pointer group">
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center text-xl mb-5 transition-all"
+               style="background:rgba(79,70,229,0.15);">📘</div>
+          <h3 class="font-semibold mb-2">AI Learning Chat</h3>
+          <p class="text-sm leading-relaxed" style="color:#71717a;">
+            Adaptive teaching that adjusts difficulty based on your quiz performance and progress.
+          </p>
+          <div class="mt-4 flex items-center gap-1 text-xs font-medium" style="color:#818cf8;">
+            Start learning <span>→</span>
+          </div>
         </a>
 
         <!-- Dashboard -->
-        <a href="dashboard.html" class="feature-card glass rounded-2xl p-6 cursor-pointer group">
-          <div class="w-12 h-12 rounded-xl bg-violet-600/15 flex items-center justify-center text-xl mb-5 group-hover:bg-violet-600/25 transition-colors">📊</div>
-          <h3 class="text-lg font-semibold mb-2">Dashboard</h3>
-          <p class="text-sm text-zinc-400 leading-relaxed">Track your goals, progress, and identify weak areas at a glance.</p>
+        <a href="dashboard.html" class="feature-card card cursor-pointer group">
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center text-xl mb-5 transition-all"
+               style="background:rgba(139,92,246,0.15);">📊</div>
+          <h3 class="font-semibold mb-2">Progress Dashboard</h3>
+          <p class="text-sm leading-relaxed" style="color:#71717a;">
+            Per-conversation dashboards showing mastery, goals, weak areas, and real-time progress.
+          </p>
+          <div class="mt-4 flex items-center gap-1 text-xs font-medium" style="color:#a78bfa;">
+            View progress <span>→</span>
+          </div>
         </a>
 
         <!-- Syllabus -->
-        <a href="syllabus.html" class="feature-card glass rounded-2xl p-6 cursor-pointer group">
-          <div class="w-12 h-12 rounded-xl bg-fuchsia-600/15 flex items-center justify-center text-xl mb-5 group-hover:bg-fuchsia-600/25 transition-colors">📚</div>
-          <h3 class="text-lg font-semibold mb-2">Syllabus</h3>
-          <p class="text-sm text-zinc-400 leading-relaxed">Organize your syllabus and let the AI guide you through each topic.</p>
+        <a href="syllabus.html" class="feature-card card cursor-pointer group">
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center text-xl mb-5 transition-all"
+               style="background:rgba(192,132,252,0.15);">📚</div>
+          <h3 class="font-semibold mb-2">Syllabus Manager</h3>
+          <p class="text-sm leading-relaxed" style="color:#71717a;">
+            Organize topics per chat session. AI guides you through each one in optimal order.
+          </p>
+          <div class="mt-4 flex items-center gap-1 text-xs font-medium" style="color:#c084fc;">
+            Manage syllabus <span>→</span>
+          </div>
         </a>
 
         <!-- Analysis -->
-        <a href="analysis.html" class="feature-card glass rounded-2xl p-6 cursor-pointer group">
-          <div class="w-12 h-12 rounded-xl bg-cyan-600/15 flex items-center justify-center text-xl mb-5 group-hover:bg-cyan-600/25 transition-colors">📈</div>
-          <h3 class="text-lg font-semibold mb-2">Analysis</h3>
-          <p class="text-sm text-zinc-400 leading-relaxed">Visualize your performance with charts and get AI-powered recommendations.</p>
+        <a href="analysis.html" class="feature-card card cursor-pointer group">
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center text-xl mb-5 transition-all"
+               style="background:rgba(6,182,212,0.12);">📈</div>
+          <h3 class="font-semibold mb-2">Performance Analysis</h3>
+          <p class="text-sm leading-relaxed" style="color:#71717a;">
+            Charts, AI insights, strengths vs weaknesses — understand exactly where to improve.
+          </p>
+          <div class="mt-4 flex items-center gap-1 text-xs font-medium" style="color:#22d3ee;">
+            Analyze <span>→</span>
+          </div>
         </a>
+      </div>
+
+      <!-- Second row of feature highlights -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4 stagger">
+        <div class="card flex items-start gap-4">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0" style="background:rgba(251,191,36,0.12);">🎥</div>
+          <div>
+            <h4 class="font-semibold text-sm mb-1">YouTube Learning</h4>
+            <p class="text-xs leading-relaxed" style="color:#71717a;">Paste any YouTube URL. AI extracts the transcript and makes it queryable.</p>
+          </div>
+        </div>
+        <div class="card flex items-start gap-4">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0" style="background:rgba(52,211,153,0.12);">📄</div>
+          <div>
+            <h4 class="font-semibold text-sm mb-1">PDF RAG</h4>
+            <p class="text-xs leading-relaxed" style="color:#71717a;">Upload study materials. Ask questions and get AI answers grounded in your docs.</p>
+          </div>
+        </div>
+        <div class="card flex items-start gap-4">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0" style="background:rgba(248,113,113,0.12);">🕸️</div>
+          <div>
+            <h4 class="font-semibold text-sm mb-1">Knowledge Graph</h4>
+            <p class="text-xs leading-relaxed" style="color:#71717a;">AI maps concepts and relationships from your PDFs into an interactive visual graph.</p>
+          </div>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- Footer -->
-  <footer class="border-t border-zinc-800/50 py-8 px-6">
+  <!-- ============================================================
+       HOW IT WORKS
+  ============================================================ -->
+  <section class="py-20 px-4" style="background:rgba(255,255,255,0.015);">
+    <div class="max-w-4xl mx-auto">
+      <div class="text-center mb-14">
+        <span class="badge badge-green mb-4">How It Works</span>
+        <h2 class="text-3xl md:text-4xl font-bold tracking-tight mb-4">Learn in 3 Simple Steps</h2>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 stagger">
+        <div class="card text-center">
+          <div class="w-12 h-12 rounded-xl bg-indigo-600/20 flex items-center justify-center text-2xl mx-auto mb-4">1️⃣</div>
+          <h3 class="font-semibold mb-2">Ask a Question</h3>
+          <p class="text-sm leading-relaxed" style="color:#71717a;">Type any topic — AI creates a structured learning plan, explains it at your level, and generates a quiz.</p>
+        </div>
+        <div class="card text-center">
+          <div class="w-12 h-12 rounded-xl bg-violet-600/20 flex items-center justify-center text-2xl mx-auto mb-4">2️⃣</div>
+          <h3 class="font-semibold mb-2">Take the Quiz</h3>
+          <p class="text-sm leading-relaxed" style="color:#71717a;">Answer AI-generated MCQs. Your score updates mastery levels and difficulty adapts for the next session.</p>
+        </div>
+        <div class="card text-center">
+          <div class="w-12 h-12 rounded-xl bg-fuchsia-600/20 flex items-center justify-center text-2xl mx-auto mb-4">3️⃣</div>
+          <h3 class="font-semibold mb-2">Track Progress</h3>
+          <p class="text-sm leading-relaxed" style="color:#71717a;">View mastery charts, weak topic alerts, and AI recommendations on your personalized dashboard.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       CTA SECTION
+  ============================================================ -->
+  <section class="py-20 px-4">
+    <div class="max-w-2xl mx-auto text-center">
+      <div class="card" style="background:linear-gradient(135deg,rgba(79,70,229,0.12),rgba(139,92,246,0.08)); border-color:rgba(99,102,241,0.2);">
+        <div class="text-4xl mb-4">🚀</div>
+        <h2 class="text-2xl md:text-3xl font-bold mb-3">Ready to Start Learning?</h2>
+        <p class="mb-6 text-sm" style="color:#a1a1aa;">Join thousands of students using AI to study smarter.</p>
+        <a href="learning.html" class="btn btn-primary btn-lg">Start for Free →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       FOOTER
+  ============================================================ -->
+  <footer class="py-8 px-6" style="border-top:1px solid rgba(255,255,255,0.06);">
     <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-      <p class="text-sm text-zinc-500">© 2026 Your AI Tutor. Built with ❤️</p>
-      <div class="flex items-center gap-6">
-        <a href="learning.html" class="text-sm text-zinc-500 hover:text-zinc-300 transition-colors">Learning</a>
-        <a href="dashboard.html" class="text-sm text-zinc-500 hover:text-zinc-300 transition-colors">Dashboard</a>
-        <a href="syllabus.html" class="text-sm text-zinc-500 hover:text-zinc-300 transition-colors">Syllabus</a>
-        <a href="analysis.html" class="text-sm text-zinc-500 hover:text-zinc-300 transition-colors">Analysis</a>
+      <div class="flex items-center gap-2">
+        <div class="w-6 h-6 rounded bg-indigo-600 flex items-center justify-center text-[10px] font-bold">AI</div>
+        <span class="text-sm font-semibold">Your AI Tutor</span>
+        <span class="text-xs ml-2" style="color:#52525b;">© 2026 All rights reserved</span>
+      </div>
+      <div class="flex items-center gap-5">
+        <a href="learning.html"  class="text-xs hover:text-white transition-colors" style="color:#71717a;">Learning</a>
+        <a href="dashboard.html" class="text-xs hover:text-white transition-colors" style="color:#71717a;">Dashboard</a>
+        <a href="syllabus.html"  class="text-xs hover:text-white transition-colors" style="color:#71717a;">Syllabus</a>
+        <a href="analysis.html"  class="text-xs hover:text-white transition-colors" style="color:#71717a;">Analysis</a>
       </div>
     </div>
   </footer>
 
   <script src="js/app.js"></script>
+  <script>
+    // Mobile nav toggle
+    function toggleMobileNav() {
+      const nav = document.getElementById('mobile-nav');
+      const overlay = document.getElementById('mobile-overlay');
+      nav.classList.toggle('open');
+      overlay.classList.toggle('show');
+    }
+
+    // Update hero CTA based on auth state
+    const user = getUser();
+    if (user) {
+      const cta = document.getElementById('hero-cta');
+      if (cta) cta.textContent = 'Continue Learning →';
+    }
+
+    // Nav auth
+    const navAuth = document.getElementById('nav-auth');
+    const mobileAuth = document.getElementById('mobile-auth');
+    if (user) {
+      const html = `
+        <span class="text-sm font-medium" style="color:#a1a1aa;">Hi, <span style="color:#818cf8">${user.username}</span></span>
+        <button onclick="logout()" class="btn btn-sm btn-secondary">Logout</button>`;
+      navAuth.innerHTML = html;
+      mobileAuth.innerHTML = html;
+    } else {
+      const html = `<a href="login.html" class="btn btn-primary btn-sm w-full">Sign In</a>`;
+      navAuth.innerHTML = html;
+      mobileAuth.innerHTML = html;
+    }
+  </script>
 </body>
 </html>

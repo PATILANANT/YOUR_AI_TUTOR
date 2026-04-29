@@ -320,36 +320,47 @@ function renderMarkdown(text) {
 
 function updateNavAuth() {
   const user = getUser();
-  const authArea = document.getElementById("nav-auth");
-  if (!authArea) return;
+  const authArea    = document.getElementById('nav-auth');
+  const mobileArea  = document.getElementById('mobile-auth');
 
-  if (user && user.user_id) {
-    authArea.innerHTML = `
-      <span class="text-zinc-400 text-sm mr-3">Hi, <span class="text-indigo-400 font-semibold">${user.username}</span></span>
-      <button onclick="logout()" class="px-4 py-2 text-sm rounded-lg bg-zinc-700/60 hover:bg-red-600/80 text-zinc-300 hover:text-white transition-all duration-200">Logout</button>
-    `;
-  } else {
-    authArea.innerHTML = `
-      <a href="login.html" class="px-5 py-2 text-sm rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-all duration-200 font-medium">Login</a>
-    `;
-  }
+  const loggedInHTML = user ? `
+    <span class="text-sm font-medium" style="color:#a1a1aa;">Hi, <span style="color:#818cf8;">${user.username}</span></span>
+    <button onclick="logout()" class="btn btn-sm btn-secondary">Logout</button>
+  ` : `<a href="login.html" class="btn btn-primary btn-sm">Sign In</a>`;
+
+  const mobileLoggedInHTML = user ? `
+    <div class="text-sm mb-3" style="color:#a1a1aa;">Signed in as <span style="color:#818cf8;">${user.username}</span></div>
+    <button onclick="logout()" class="btn btn-danger w-full">Logout</button>
+  ` : `<a href="login.html" class="btn btn-primary w-full">Sign In</a>`;
+
+  if (authArea)   authArea.innerHTML   = loggedInHTML;
+  if (mobileArea) mobileArea.innerHTML = mobileLoggedInHTML;
+}
+
+// ---------- Mobile Nav Toggle (used on all pages) ----------
+
+function toggleMobileNav() {
+  const nav     = document.getElementById('mobile-nav');
+  const overlay = document.getElementById('mobile-overlay');
+  if (!nav) return;
+  nav.classList.toggle('open');
+  overlay.classList.toggle('show');
 }
 
 function logout() {
   clearUser();
   clearMessages();
   clearCurrentConversationId();
-  // Clear all conversation profiles from localStorage
   const keys = Object.keys(localStorage);
   keys.forEach(k => {
     if (k.startsWith('ai_tutor_profile')) localStorage.removeItem(k);
   });
-  showToast("Logged out", "info");
-  setTimeout(() => (window.location.href = "index.html"), 500);
+  showToast('Logged out', 'info');
+  setTimeout(() => (window.location.href = 'index.html'), 500);
 }
 
 // ---------- Init on every page ----------
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener('DOMContentLoaded', () => {
   updateNavAuth();
 });
