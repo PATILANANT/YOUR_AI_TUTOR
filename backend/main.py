@@ -236,13 +236,35 @@ def agent_api(data: AgentRequest):
         except Exception as e:
             print(f"[Agent] Failed to load conv profile: {e}")
 
+    # Translate user topic to English for token efficiency
+    topic_for_ai = data.topic
+    if data.language and data.language != "English":
+        try:
+            from utils.translator import translate_to_english
+            topic_for_ai = translate_to_english(data.topic, source_language=data.language)
+        except Exception:
+            pass
+
     result = run_agent(
-        data.topic,
+        topic_for_ai,
         profile,
         data.target,
         data.style,
         chat_history=chat_history
     )
+
+    # Translate output back to user's language
+    if data.language and data.language != "English":
+        try:
+            from utils.translator import translate_text
+            if result.get("plan"):
+                result["plan"] = translate_text(result["plan"], data.language)
+            if result.get("teaching"):
+                result["teaching"] = translate_text(result["teaching"], data.language)
+            if result.get("quiz"):
+                result["quiz"] = translate_text(result["quiz"], data.language)
+        except Exception:
+            pass
 
     return result
 
@@ -282,6 +304,16 @@ def chat_api(data: ChatRequest):
     # Build rich context
     context = build_context_prompt(chat_history, profile)
 
+    # Translate user query to English for token efficiency
+    # (Non-English scripts like Hindi use 2-3x more tokens)
+    query_for_ai = query
+    if language and language != "English":
+        try:
+            from utils.translator import translate_to_english
+            query_for_ai = translate_to_english(query, source_language=language)
+        except Exception:
+            pass
+
     prompt = f"""{context}You are a helpful, friendly, and expert AI tutor. Answer the student's question clearly and concisely.
 Use markdown formatting for readability. Be thorough but don't overcomplicate things.
 
@@ -291,11 +323,11 @@ IMPORTANT GUIDELINES:
 - If the student has a syllabus, relate your answer to their learning path.
 - Be encouraging and supportive.
 
-Student's Question: {query}"""
+Student's Question: {query_for_ai}"""
 
     answer = _generate(prompt)
 
-    # Translate if needed
+    # Translate output back to user's language
     if language and language != "English":
         try:
             from utils.translator import translate_text
@@ -383,7 +415,7 @@ def translate_api(data: dict):
 
 # In-memory store for vector DBs per user
 _vector_stores = {}
-# In-memory store for knowledge graphs per user
+# In-memory store for knowledge graphs per user+conversation
 _knowledge_graphs = {}
 
 @app.post("/rag_upload")
@@ -444,12 +476,12 @@ def rag_query(data: dict):
 
 
 # ===============================
-# 6. KNOWLEDGE GRAPH ENDPOINTS (NEW)
+# 6. KNOWLEDGE GRAPH ENDPOINTS (Per-Conversation)
 # ===============================
 
 @app.post("/knowledge_graph/extract")
 async def extract_knowledge_graph(data: dict):
-    """Extract a knowledge graph from the user's uploaded PDF chunks."""
+    """Extract a knowledge graph from the user's uploaded PDF chunks (per-conversation)."""
     from knowledge_graph import (
         build_knowledge_graph, graph_to_vis_data,
         save_graph, load_graph, merge_graphs
@@ -458,8 +490,14 @@ async def extract_knowledge_graph(data: dict):
     from rag.rag_pipeline import load_vector_db
 
     user_id = str(data.get("user_id", ""))
+    conversation_id = str(data.get("conversation_id", ""))
     if not user_id:
         raise HTTPException(status_code=400, detail="user_id required")
+    if not conversation_id:
+        raise HTTPException(status_code=400, detail="conversation_id required")
+
+    # Unique key for this user+conversation
+    kg_key = f"{user_id}_{conversation_id}"
 
     # Get vector store to extract chunks
     if user_id not in _vector_stores:
@@ -473,8 +511,6 @@ async def extract_knowledge_graph(data: dict):
 
     # Get all documents from the vector store
     try:
-        # FAISS doesn't have a direct "get all docs" method,
-        # so we do a broad similarity search
         chunks = vector_db.similarity_search("main topics concepts summary", k=20)
     except Exception:
         chunks = []
@@ -486,8 +522,8 @@ async def extract_knowledge_graph(data: dict):
     chunk_texts = [c.page_content for c in chunks[:10]]
     new_graph = build_knowledge_graph(chunk_texts)
 
-    # Merge with existing graph if any
-    graph_path = os.path.join("knowledge_graphs", f"{user_id}.json")
+    # Merge with existing graph for THIS conversation if any
+    graph_path = os.path.join("knowledge_graphs", f"{kg_key}.json")
     existing = load_graph(graph_path)
 
     if existing:
@@ -495,14 +531,14 @@ async def extract_knowledge_graph(data: dict):
     else:
         merged = new_graph
 
-    # Save to disk
+    # Save to disk and memory
     save_graph(merged, graph_path)
-    _knowledge_graphs[user_id] = merged
+    _knowledge_graphs[kg_key] = merged
 
-    # Get mastery data for coloring
+    # Get mastery data for coloring (per-conversation)
     mastery_data = {}
     try:
-        mastery_records = get_user_mastery(int(user_id))
+        mastery_records = get_user_mastery(int(user_id), conversation_id=int(conversation_id))
         mastery_data = {r["concept"]: r["score"] for r in mastery_records}
     except Exception:
         pass
@@ -516,25 +552,27 @@ async def extract_knowledge_graph(data: dict):
     }
 
 
-@app.get("/knowledge_graph/{user_id}")
-def get_knowledge_graph(user_id: str):
-    """Return the user's knowledge graph as vis-network JSON."""
+@app.get("/knowledge_graph/{user_id}/{conversation_id}")
+def get_knowledge_graph(user_id: str, conversation_id: str):
+    """Return the knowledge graph for a specific conversation."""
     from knowledge_graph import load_graph, graph_to_vis_data
 
+    kg_key = f"{user_id}_{conversation_id}"
+
     # Try in-memory first
-    if user_id in _knowledge_graphs:
-        graph = _knowledge_graphs[user_id]
+    if kg_key in _knowledge_graphs:
+        graph = _knowledge_graphs[kg_key]
     else:
-        graph_path = os.path.join("knowledge_graphs", f"{user_id}.json")
+        graph_path = os.path.join("knowledge_graphs", f"{kg_key}.json")
         graph = load_graph(graph_path)
         if not graph:
             return {"graph": {"nodes": [], "edges": []}, "node_count": 0, "edge_count": 0}
-        _knowledge_graphs[user_id] = graph
+        _knowledge_graphs[kg_key] = graph
 
-    # Get mastery data for coloring
+    # Get mastery data for coloring (per-conversation)
     mastery_data = {}
     try:
-        mastery_records = get_user_mastery(int(user_id))
+        mastery_records = get_user_mastery(int(user_id), conversation_id=int(conversation_id))
         mastery_data = {r["concept"]: r["score"] for r in mastery_records}
     except Exception:
         pass
@@ -545,6 +583,7 @@ def get_knowledge_graph(user_id: str):
         "node_count": len(vis_data["nodes"]),
         "edge_count": len(vis_data["edges"])
     }
+
 
 
 # ===============================
@@ -559,7 +598,7 @@ async def youtube_ingest(data: dict):
     from config import COHERE_API_KEY
     from langchain_text_splitters import RecursiveCharacterTextSplitter
     from langchain_community.vectorstores import FAISS
-    from langchain.schema import Document
+    from langchain_core.documents import Document
 
     url = data.get("url", "")
     user_id = str(data.get("user_id", ""))
@@ -608,38 +647,6 @@ async def youtube_ingest(data: dict):
         raise HTTPException(status_code=500, detail=f"Failed to process video: {str(e)}")
 
 
-# ===============================
-# 8. VOICE NOTE ENDPOINT (NEW)
-# ===============================
-
-@app.post("/voice_transcribe")
-async def voice_transcribe(
-    user_id: str = Form(...),
-    audio: UploadFile = File(...)
-):
-    """Transcribe a voice note and return the text."""
-    from multimodal import transcribe_voice_note
-
-    temp_path = f"temp_audio_{user_id}.webm"
-
-    try:
-        contents = await audio.read()
-        with open(temp_path, "wb") as f:
-            f.write(contents)
-
-        text = transcribe_voice_note(temp_path)
-
-        if not text:
-            raise HTTPException(status_code=400, detail="Could not transcribe audio. Please try again.")
-
-        return {"transcription": text}
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Transcription failed: {str(e)}")
-    finally:
-        if os.path.exists(temp_path):
-            os.remove(temp_path)
 
 
 # ===============================

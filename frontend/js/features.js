@@ -1,5 +1,5 @@
 // ============================================================
-// features.js — Knowledge Graph, YouTube, Voice, Mastery
+// features.js — Knowledge Graph, YouTube, Mastery
 // ============================================================
 
 // ==================== KNOWLEDGE GRAPH ====================
@@ -10,6 +10,9 @@ async function buildKnowledgeGraph() {
   const user = getUser();
   if (!user) return showToast('Please login first', 'error');
 
+  const convId = getCurrentConversationId();
+  if (!convId) return showToast('Select a chat session first', 'warning');
+
   const btn = document.getElementById('kg-btn');
   const statusEl = document.getElementById('kg-status');
   btn.disabled = true;
@@ -19,7 +22,8 @@ async function buildKnowledgeGraph() {
 
   try {
     const res = await apiCall('/knowledge_graph/extract', 'POST', {
-      user_id: String(user.user_id)
+      user_id: String(user.user_id),
+      conversation_id: String(convId)
     });
 
     statusEl.textContent = `✅ Found ${res.node_count} concepts, ${res.edge_count} connections`;
@@ -39,8 +43,10 @@ async function buildKnowledgeGraph() {
 async function loadKnowledgeGraph() {
   const user = getUser();
   if (!user) return;
+  const convId = getCurrentConversationId();
+  if (!convId) return;
   try {
-    const res = await apiCall(`/knowledge_graph/${user.user_id}`);
+    const res = await apiCall(`/knowledge_graph/${user.user_id}/${convId}`);
     if (res.node_count > 0) {
       renderKnowledgeGraph(res.graph);
     }
@@ -152,97 +158,8 @@ async function ingestYouTube() {
 }
 
 
-// ==================== VOICE RECORDING ====================
 
-let mediaRecorder = null;
-let audioChunks = [];
-let isRecording = false;
 
-async function toggleRecording() {
-  if (isRecording) {
-    stopRecording();
-  } else {
-    startRecording();
-  }
-}
-
-async function startRecording() {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    mediaRecorder = new MediaRecorder(stream);
-    audioChunks = [];
-
-    mediaRecorder.ondataavailable = (e) => {
-      if (e.data.size > 0) audioChunks.push(e.data);
-    };
-
-    mediaRecorder.onstop = async () => {
-      stream.getTracks().forEach(t => t.stop());
-      const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-      await transcribeAudio(audioBlob);
-    };
-
-    mediaRecorder.start();
-    isRecording = true;
-
-    const btn = document.getElementById('voice-btn');
-    const label = document.getElementById('voice-label');
-    btn.classList.add('border-red-500', 'text-red-400');
-    btn.classList.remove('border-zinc-600/50', 'text-zinc-400');
-    label.innerHTML = '<span class="rec-pulse">●</span> Recording... (tap to stop)';
-
-    // Auto-stop after 60 seconds
-    setTimeout(() => { if (isRecording) stopRecording(); }, 60000);
-  } catch (err) {
-    showToast('Microphone access denied', 'error');
-  }
-}
-
-function stopRecording() {
-  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-    mediaRecorder.stop();
-  }
-  isRecording = false;
-
-  const btn = document.getElementById('voice-btn');
-  const label = document.getElementById('voice-label');
-  btn.classList.remove('border-red-500', 'text-red-400');
-  btn.classList.add('border-zinc-600/50', 'text-zinc-400');
-  label.textContent = 'Record Doubt';
-}
-
-async function transcribeAudio(blob) {
-  const user = getUser();
-  if (!user) return;
-
-  const statusEl = document.getElementById('voice-status');
-  statusEl.textContent = '🔄 Transcribing...';
-  statusEl.classList.remove('hidden');
-  statusEl.className = 'text-xs text-amber-400 mt-1.5';
-
-  try {
-    const formData = new FormData();
-    formData.append('user_id', String(user.user_id));
-    formData.append('audio', blob, 'voice_note.webm');
-
-    const res = await apiUpload('/voice_transcribe', formData);
-    const text = res.transcription;
-
-    if (text) {
-      document.getElementById('chat-input').value = text;
-      statusEl.textContent = '✅ Transcribed! Review and hit Send.';
-      statusEl.className = 'text-xs text-emerald-400 mt-1.5';
-      showToast('Voice transcribed!', 'success');
-    } else {
-      statusEl.textContent = '❌ Could not understand audio';
-      statusEl.className = 'text-xs text-red-400 mt-1.5';
-    }
-  } catch (err) {
-    statusEl.textContent = '❌ ' + err.message;
-    statusEl.className = 'text-xs text-red-400 mt-1.5';
-    showToast('Transcription failed', 'error');
-  }
-}
 
 
 // ==================== TOPIC MASTERY ====================

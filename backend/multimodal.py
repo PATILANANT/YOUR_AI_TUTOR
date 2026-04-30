@@ -14,6 +14,7 @@ def extract_youtube_transcript(video_url: str) -> dict:
     """
     Extract transcript from a YouTube video URL.
     Returns dict with transcript, summary, and metadata.
+    Supports youtube-transcript-api v1.x (fetch) and legacy v0.x (get_transcript).
     """
     from youtube_transcript_api import YouTubeTranscriptApi
 
@@ -23,19 +24,35 @@ def extract_youtube_transcript(video_url: str) -> dict:
         raise ValueError("Invalid YouTube URL. Please provide a valid YouTube video link.")
 
     try:
-        # Fetch transcript
-        transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
-        full_text = " ".join([entry['text'] for entry in transcript_list])
+        # v1.x API: instance-based with fetch()
+        ytt = YouTubeTranscriptApi()
+        transcript_obj = ytt.fetch(video_id)
 
-        # Calculate total duration
-        total_duration = sum(entry.get('duration', 0) for entry in transcript_list)
+        # v1.x returns a FetchedTranscript with .snippets
+        snippets = transcript_obj.snippets
+        full_text = " ".join([s.text for s in snippets])
+        total_duration = sum(s.duration for s in snippets)
 
         return {
             "video_id": video_id,
             "transcript": full_text,
             "duration_seconds": total_duration,
-            "segment_count": len(transcript_list)
+            "segment_count": len(snippets)
         }
+    except AttributeError:
+        # Fallback for older v0.x API
+        try:
+            transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
+            full_text = " ".join([entry['text'] for entry in transcript_list])
+            total_duration = sum(entry.get('duration', 0) for entry in transcript_list)
+            return {
+                "video_id": video_id,
+                "transcript": full_text,
+                "duration_seconds": total_duration,
+                "segment_count": len(transcript_list)
+            }
+        except Exception as e:
+            raise ValueError(f"Could not extract transcript: {str(e)}. The video may not have captions available.")
     except Exception as e:
         raise ValueError(f"Could not extract transcript: {str(e)}. The video may not have captions available.")
 
@@ -85,69 +102,3 @@ def _parse_youtube_id(url: str) -> str:
         return url
 
     return None
-
-
-# ---------------------------------------------------
-# 2. VOICE NOTE TRANSCRIPTION (Using Whisper)
-# ---------------------------------------------------
-
-def transcribe_voice_note(audio_path: str) -> str:
-    """
-    Transcribe an audio file using OpenAI Whisper (local model).
-    Uses the 'base' model for a good speed/accuracy balance.
-    """
-    try:
-        import whisper
-        model = whisper.load_model("base")
-        result = model.transcribe(audio_path)
-        return result.get("text", "")
-    except ImportError:
-        # Fallback: try using speech_recognition with Google's free API
-        return _transcribe_fallback(audio_path)
-    except Exception as e:
-        raise ValueError(f"Transcription failed: {str(e)}")
-
-
-def _transcribe_fallback(audio_path: str) -> str:
-    """
-    Fallback transcription using SpeechRecognition library with Google's free API.
-    Works without installing the large Whisper model.
-    """
-    try:
-        import speech_recognition as sr
-
-        recognizer = sr.Recognizer()
-
-        # Convert to WAV if needed (for webm/ogg from browser)
-        wav_path = audio_path
-        if not audio_path.endswith('.wav'):
-            wav_path = _convert_to_wav(audio_path)
-
-        with sr.AudioFile(wav_path) as source:
-            audio_data = recognizer.record(source)
-
-        text = recognizer.recognize_google(audio_data)
-
-        # Cleanup temp wav if we converted
-        if wav_path != audio_path and os.path.exists(wav_path):
-            os.remove(wav_path)
-
-        return text
-    except Exception as e:
-        raise ValueError(f"Fallback transcription failed: {str(e)}. Please install 'openai-whisper' for better results.")
-
-
-def _convert_to_wav(input_path: str) -> str:
-    """Convert audio file to WAV format using pydub."""
-    try:
-        from pydub import AudioSegment
-
-        audio = AudioSegment.from_file(input_path)
-        wav_path = input_path.rsplit('.', 1)[0] + '.wav'
-        audio.export(wav_path, format='wav')
-        return wav_path
-    except ImportError:
-        # If pydub is not installed, try to use the file as-is
-        return input_path
-    except Exception:
-        return input_path

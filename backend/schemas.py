@@ -6,6 +6,7 @@ class AgentRequest(BaseModel):
     target: str
     style: str
     profile: dict
+    language: Optional[str] = "English"
     conversation_id: Optional[int] = None
     chat_history: Optional[List[dict]] = []
 
