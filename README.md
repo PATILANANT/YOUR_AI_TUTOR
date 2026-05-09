@@ -63,22 +63,34 @@
 
 ## Overall Learning 
 
-> _This is a placeholder. Replace the text below with your personal learning summary._
-During this course, I learned the fundamentals of web development and project design.
-I gained hands-on experience with HTML, CSS, JavaScript and strengthened my skills in 
-problem-solving, teamwork, documentation, and delivering real-world project solutions.
+Overall Learning Experience During Internship
+
+During this internship, I gained valuable practical knowledge and hands-on experience in the field of Artificial Intelligence, Machine Learning, and Full Stack Development. Working on the “Your AI Tutor” project helped me understand how real-world AI applications are designed, developed, and integrated into user-friendly systems.
+
+I learned how to build a complete AI-powered application by connecting frontend technologies with backend APIs and AI models. I improved my understanding of technologies such as FastAPI, Python, LangChain, SQLite, HTML, CSS, JavaScript, and Generative AI APIs. I also explored advanced concepts like Retrieval-Augmented Generation (RAG), Knowledge Graphs, Vector Databases, and adaptive learning systems.
+
+One of the major learnings from this internship was understanding how AI can be used to personalize education and improve student learning experiences. I learned how to track user progress, identify weak topics, generate quizzes automatically, and provide intelligent recommendations using AI models.
+
+Apart from technical skills, this internship also improved my:
+
+Problem-solving ability
+Debugging and analytical thinking
+Team collaboration and communication
+Project management and documentation skills
+Understanding of real-world software development workflows
+
+I also learned how to structure a project professionally, manage backend APIs, handle databases, and improve application performance. Working on this project increased my confidence in developing industry-level AI applications.
+
+Overall, this internship was a great learning experience that enhanced both my technical and professional skills and motivated me to continue growing in the field of AI and software development.
 
 
 <h2 style="color:#333;"> Projects Completed </h2>
 <div align="left" style="margin: 20px; font-size: 16px;">
 
-<p><strong><a href="#project1">Project 1:</a></strong> &lt;!-- Add project title → --&gt;</p>
+<p><strong><a href="#project1">Project 1:</a></strong> YOUR_AI_TOTUR </p>
 
-<p><strong><a href="#project2">Project 2:</a></strong> &lt;!-- Add project title → --&gt;</p>
 
-<p><strong><a href="#project3">Project 3:</a></strong> &lt;!-- Add project title → --&gt;</p>
-
-<p><em>(You can add more projects as needed)</em></p>
+<p><em></em></p>
 
 </div>
 
@@ -112,15 +124,27 @@ Additionally, the system includes a backend powered by FastAPI and an AI engine 
 
 ## **References**
 
-- [Wikipedia](https://wikipedia.com)
-<!--you can add refrences over here in same syntax as above -->
----
+FastAPI Documentation
+LangChain Documentation
+Google Gemini AI Documentation
+FAISS Documentation
+NetworkX Documentation
+SQLite Documentation
+Python Official Documentation
+HTML Documentation – MDN Web Docs
+CSS Documentation – MDN Web Docs
+JavaScript Documentation – MDN Web Docs
+Streamlit Documentation
+Uvicorn Documentation
+Cohere Documentation
+YouTube Transcript API GitHub
+GitHub
+
 
 
 ## **Learnings from LST and SST**
 
-<!-- add your experiences over here -->
-> _This is a placeholder. Replace the text below with your personal learning from LST and SST sessions summary._
+
 Learnings from LST and SST
 
 The LST (Life Skills Training) and SST (Soft Skills Training) sessions played a crucial role in enhancing my overall personality and professional readiness. These sessions helped me understand the importance of communication, emotional intelligence, and ethical behavior in both personal and professional environments.
